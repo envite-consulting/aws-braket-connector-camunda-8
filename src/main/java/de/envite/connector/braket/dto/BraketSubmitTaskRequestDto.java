@@ -1,8 +1,10 @@
 package de.envite.connector.braket.dto;
 
+import de.envite.connector.braket.model.CircuitInputMode;
 import de.envite.connector.braket.model.OperationMode;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -36,15 +38,34 @@ public class BraketSubmitTaskRequestDto extends BraketBaseRequestDto {
     private final String deviceArn;
 
     /**
+     * Determines how the quantum circuit is provided.
+     * <ul>
+     *   <li>{@link CircuitInputMode#OPEN_QASM} – provide an OpenQASM 3 string via {@code circuit}.</li>
+     *   <li>{@link CircuitInputMode#DIRECT_PARAMS} – provide the full Braket IR action JSON via {@code params}.</li>
+     * </ul>
+     */
+    @NotNull
+    @Builder.Default
+    private final CircuitInputMode circuitInputMode = CircuitInputMode.OPEN_QASM;
+
+    /**
      * OpenQASM 3 circuit to execute.
+     * Required when {@link #circuitInputMode} is {@link CircuitInputMode#OPEN_QASM}.
      * The circuit must use gates supported by the target device.
      * Braket does not transpile circuits — unsupported gates will cause the task to fail.
      */
-    @NotEmpty
     private final String circuit;
 
     /**
+     * Complete Braket IR action JSON string.
+     * Required when {@link #circuitInputMode} is {@link CircuitInputMode#DIRECT_PARAMS}.
+     * Must include a valid {@code braketSchemaHeader} and {@code source} field.
+     */
+    private final String params;
+
+    /**
      * Number of shots (circuit repetitions).
+     * Used when {@link #circuitInputMode} is {@link CircuitInputMode#OPEN_QASM}.
      * Simulators support up to 100,000 shots; QPU limits vary by device.
      */
     @Min(1)
