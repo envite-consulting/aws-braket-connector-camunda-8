@@ -1,0 +1,248 @@
+{
+  "$schema": "https://unpkg.com/@camunda/zeebe-element-templates-json-schema/resources/schema.json",
+  "name": "AWS Braket Connector",
+  "id": "de.envite.aws-braket-connector",
+  "description": "Execute quantum circuits on AWS Braket quantum devices and simulators.",
+  "version": 1,
+  "documentationRef": "https://github.com/envite/aws-braket-connector-camunda-8",
+  "category": {
+    "id": "connectors",
+    "name": "Connectors"
+  },
+  "icon": {
+    "contents": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMiAyMiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIyIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIyLjIiIGZpbGw9IiNGRjk5MDAiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiIHRyYW5zZm9ybT0icm90YXRlKDYwIDExIDExKSIvPgogIDxlbGxpcHNlIGN4PSIxMSIgY3k9IjExIiByeD0iOSIgcnk9IjMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY5OTAwIiBzdHJva2Utd2lkdGg9IjEuMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTIwIDExIDExKSIvPgo8L3N2Zz4K"
+  },
+  "appliesTo": ["bpmn:ServiceTask"],
+  "elementType": {
+    "value": "bpmn:ServiceTask"
+  },
+  "groups": [
+    { "id": "operation",  "label": "Operation" },
+    { "id": "auth",       "label": "AWS Authentication" },
+    { "id": "task",       "label": "Task Configuration" },
+    { "id": "execution",  "label": "Execution" },
+    { "id": "output",     "label": "Output Mapping" },
+    { "id": "error",      "label": "Error Handling" }
+  ],
+  "properties": [
+    {
+      "type": "Hidden",
+      "value": "de.envite:aws-braket-connector:1",
+      "binding": { "type": "zeebe:taskDefinition", "property": "type" }
+    },
+
+    {
+      "id": "operationMode",
+      "label": "Operation",
+      "description": "Choose <em>Submit Task</em> to queue a new quantum task. Choose <em>Get Task Result</em> to check the status of a previously submitted task — use this inside a BPMN polling loop with a timer to avoid long-running connector threads.",
+      "group": "operation",
+      "type": "Dropdown",
+      "value": "SUBMIT_TASK",
+      "choices": [
+        { "name": "Submit Task",      "value": "SUBMIT_TASK" },
+        { "name": "Get Task Result",  "value": "GET_TASK_RESULT" }
+      ],
+      "binding": { "type": "zeebe:input", "name": "operationMode" }
+    },
+
+    {
+      "label": "AWS Access Key ID",
+      "description": "Use a Camunda secret: <code>{{secrets.AWS_ACCESS_KEY_ID}}</code>",
+      "group": "auth",
+      "type": "String",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "accessKeyId" },
+      "constraints": { "notEmpty": true }
+    },
+    {
+      "label": "AWS Secret Access Key",
+      "description": "Use a Camunda secret: <code>{{secrets.AWS_SECRET_ACCESS_KEY}}</code>",
+      "group": "auth",
+      "type": "String",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "secretAccessKey" },
+      "constraints": { "notEmpty": true }
+    },
+    {
+      "label": "AWS Session Token",
+      "description": "Optional. Required when using temporary credentials (e.g. from STS AssumeRole). Use a Camunda secret: <code>{{secrets.AWS_SESSION_TOKEN}}</code>",
+      "group": "auth",
+      "type": "String",
+      "feel": "optional",
+      "optional": true,
+      "binding": { "type": "zeebe:input", "name": "sessionToken" }
+    },
+    {
+      "label": "AWS Region",
+      "description": "AWS region where your Braket tasks will run, e.g. <code>us-east-1</code>",
+      "group": "auth",
+      "type": "String",
+      "value": "us-east-1",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "region" },
+      "constraints": { "notEmpty": true }
+    },
+
+    {
+      "label": "Task ARN",
+      "description": "ARN of the previously submitted Braket quantum task to check",
+      "group": "task",
+      "type": "String",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "taskArn" },
+      "constraints": { "notEmpty": true },
+      "condition": { "property": "operationMode", "equals": "GET_TASK_RESULT" }
+    },
+
+    {
+      "label": "Device ARN",
+      "description": "Full ARN of the target quantum device. Examples:<br/><code>arn:aws:braket:::device/quantum-simulator/amazon/sv1</code> (SV1 simulator)<br/><code>arn:aws:braket:us-east-1::device/qpu/ionq/Aria-1</code> (IonQ Aria QPU)",
+      "group": "task",
+      "type": "String",
+      "value": "arn:aws:braket:::device/quantum-simulator/amazon/sv1",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "deviceArn" },
+      "constraints": { "notEmpty": true },
+      "condition": { "property": "operationMode", "equals": "SUBMIT_TASK" }
+    },
+
+    {
+      "id": "circuitInputMode",
+      "label": "Circuit Input Mode",
+      "description": "How the quantum circuit is supplied. Use <em>OpenQASM</em> to enter a circuit string directly, or <em>Direct Params</em> for full control over the Braket IR action payload.",
+      "group": "task",
+      "type": "Dropdown",
+      "value": "OPEN_QASM",
+      "choices": [
+        { "name": "OpenQASM 3",           "value": "OPEN_QASM" },
+        { "name": "Direct Params (JSON)", "value": "DIRECT_PARAMS" }
+      ],
+      "binding": { "type": "zeebe:input", "name": "circuitInputMode" },
+      "condition": { "property": "operationMode", "equals": "SUBMIT_TASK" }
+    },
+
+    {
+      "label": "Quantum Circuit (OpenQASM 3)",
+      "description": "OpenQASM 3 circuit to execute. Braket does not transpile — use gates supported by the target device. Example: <code>OPENQASM 3.0; qubit[1] q; x q[0];</code>",
+      "group": "task",
+      "type": "Text",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "circuit" },
+      "constraints": { "notEmpty": true },
+      "condition": {
+        "allMatch": [
+          { "property": "operationMode",   "equals": "SUBMIT_TASK" },
+          { "property": "circuitInputMode", "equals": "OPEN_QASM"  }
+        ]
+      }
+    },
+    {
+      "label": "Shots",
+      "description": "Number of circuit repetitions. Simulators support up to 100,000 shots; QPU limits vary by device.",
+      "group": "task",
+      "type": "Number",
+      "value": 1000,
+      "binding": { "type": "zeebe:input", "name": "shots" },
+      "condition": {
+        "allMatch": [
+          { "property": "operationMode",   "equals": "SUBMIT_TASK" },
+          { "property": "circuitInputMode", "equals": "OPEN_QASM"  }
+        ]
+      }
+    },
+
+    {
+      "label": "Braket IR Action (JSON)",
+      "description": "Complete Braket IR action JSON string. Must include a valid <code>braketSchemaHeader</code> and <code>source</code> field. Example:<br/><code>{\"braketSchemaHeader\":{\"name\":\"braket.ir.openqasm.program\",\"version\":\"1\"},\"source\":\"OPENQASM 3.0; ...\",\"inputs\":{}}</code>",
+      "group": "task",
+      "type": "Text",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "params" },
+      "constraints": { "notEmpty": true },
+      "condition": {
+        "allMatch": [
+          { "property": "operationMode",   "equals": "SUBMIT_TASK"    },
+          { "property": "circuitInputMode", "equals": "DIRECT_PARAMS" }
+        ]
+      }
+    },
+
+    {
+      "label": "S3 Result Bucket",
+      "description": "S3 bucket where Braket writes task results. Must be in the same AWS region as the task.",
+      "group": "task",
+      "type": "String",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "s3ResultBucket" },
+      "constraints": { "notEmpty": true },
+      "condition": { "property": "operationMode", "equals": "SUBMIT_TASK" }
+    },
+    {
+      "label": "S3 Key Prefix",
+      "description": "Key prefix within the S3 bucket for result objects. Braket appends <code>/&lt;taskId&gt;/results.json</code> automatically.",
+      "group": "task",
+      "type": "String",
+      "value": "braket-results",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "s3KeyPrefix" },
+      "constraints": { "notEmpty": true },
+      "condition": { "property": "operationMode", "equals": "SUBMIT_TASK" }
+    },
+
+    {
+      "label": "Wait for Result",
+      "description": "Poll until the task reaches a terminal state before completing the task. Disable this and use <em>Get Task Result</em> in a BPMN timer loop to avoid timeouts on long-running quantum tasks.",
+      "group": "execution",
+      "type": "Boolean",
+      "value": "true",
+      "binding": { "type": "zeebe:input", "name": "waitForResult" },
+      "condition": { "property": "operationMode", "equals": "SUBMIT_TASK" }
+    },
+    {
+      "label": "Timeout (seconds)",
+      "description": "Maximum time in seconds to wait for a result before failing",
+      "group": "execution",
+      "type": "Number",
+      "value": 300,
+      "binding": { "type": "zeebe:input", "name": "timeoutSeconds" },
+      "condition": { "property": "operationMode", "equals": "SUBMIT_TASK" }
+    },
+    {
+      "label": "Poll Interval (seconds)",
+      "description": "How often to check the task status when waiting for a result",
+      "group": "execution",
+      "type": "Number",
+      "value": 10,
+      "binding": { "type": "zeebe:input", "name": "pollIntervalSeconds" },
+      "condition": { "property": "operationMode", "equals": "SUBMIT_TASK" }
+    },
+
+    {
+      "label": "Result Variable",
+      "description": "Name of the process variable to store the connector result",
+      "group": "output",
+      "type": "String",
+      "value": "braketResult",
+      "binding": { "type": "zeebe:taskHeader", "key": "resultVariable" }
+    },
+    {
+      "label": "Result Expression",
+      "description": "FEEL expression to map the result into process variables",
+      "group": "output",
+      "type": "Text",
+      "feel": "required",
+      "value": "= {taskArn: response.taskArn, status: response.status, result: response.result, resultS3Uri: response.resultS3Uri}",
+      "binding": { "type": "zeebe:taskHeader", "key": "resultExpression" }
+    },
+
+    {
+      "label": "Error Expression",
+      "description": "FEEL expression to handle connector errors as BPMN errors",
+      "group": "error",
+      "type": "Text",
+      "feel": "required",
+      "optional": true,
+      "binding": { "type": "zeebe:taskHeader", "key": "errorExpression" }
+    }
+  ]
+}
