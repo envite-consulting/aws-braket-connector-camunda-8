@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+             xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             targetNamespace="http://bpmn.io/schema/bpmn"
+             modeler:executionPlatform="Camunda Cloud"
+             modeler:executionPlatformVersion="8.8.0">
+
+  <process id="braket-example-workflow-polling" name="AWS Braket Example Workflow (Polling)" isExecutable="true">
+
+    <extensionElements>
+      <zeebe:properties>
+        <zeebe:property name="description" value="Executes a quantum circuit on AWS Braket using the non-blocking polling pattern (waitForResult=false). The task is submitted first, then the workflow polls the task status via a BPMN timer loop until a terminal state is reached. This avoids connector thread blocking and is suitable for QPU backends where queue time is unpredictable." />
+      </zeebe:properties>
+    </extensionElements>
+
+    <startEvent id="start" name="Quantum circuit&#10;submitted">
+      <extensionElements>
+        <zeebe:formDefinition formId="braket-input-form" />
+      </extensionElements>
+      <outgoing>to-submit</outgoing>
+    </startEvent>
+
+    <sequenceFlow id="to-submit" sourceRef="start" targetRef="submit-task" />
+
+    <serviceTask id="submit-task" name="Submit&#10;quantum circuit"
+                 zeebe:modelerTemplate="de.envite.aws-braket-connector"
+                 zeebe:modelerTemplateVersion="1"
+                 zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMiAyMiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIyIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIyLjIiIGZpbGw9IiNGRjk5MDAiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiIHRyYW5zZm9ybT0icm90YXRlKDYwIDExIDExKSIvPgogIDxlbGxpcHNlIGN4PSIxMSIgY3k9IjExIiByeD0iOSIgcnk9IjMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY5OTAwIiBzdHJva2Utd2lkdGg9IjEuMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTIwIDExIDExKSIvPgo8L3N2Zz4K">
+      <extensionElements>
+        <zeebe:taskDefinition type="de.envite:aws-braket-connector:1" retries="3" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="resultVariable" value="braketSubmitResult" />
+          <zeebe:header key="resultExpression" value="= {braketTaskArn: response.taskArn, braketResultS3Uri: response.resultS3Uri}" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="= &quot;SUBMIT_TASK&quot;" target="operationMode" />
+          <zeebe:input source="= false" target="waitForResult" />
+          <zeebe:input source="= accessKeyId" target="accessKeyId" />
+          <zeebe:input source="= secretAccessKey" target="secretAccessKey" />
+          <zeebe:input source="= region" target="region" />
+          <zeebe:input source="= deviceArn" target="deviceArn" />
+          <zeebe:input source="= &quot;OPEN_QASM&quot;" target="circuitInputMode" />
+          <zeebe:input source="= circuit" target="circuit" />
+          <zeebe:input source="= shots" target="shots" />
+          <zeebe:input source="= s3ResultBucket" target="s3ResultBucket" />
+          <zeebe:input source="= s3KeyPrefix" target="s3KeyPrefix" />
+        </zeebe:ioMapping>
+      </extensionElements>
+      <incoming>to-submit</incoming>
+      <outgoing>to-timer</outgoing>
+    </serviceTask>
+
+    <sequenceFlow id="to-timer" sourceRef="submit-task" targetRef="poll-timer" />
+
+    <intermediateCatchEvent id="poll-timer" name="Wait 60s">
+      <incoming>to-timer</incoming>
+      <incoming>to-timer-loop</incoming>
+      <outgoing>to-check</outgoing>
+      <timerEventDefinition id="poll-timer-def">
+        <timeDuration xsi:type="tFormalExpression">PT60S</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+
+    <sequenceFlow id="to-check" sourceRef="poll-timer" targetRef="check-task" />
+
+    <serviceTask id="check-task" name="Check task&#10;result"
+                 zeebe:modelerTemplate="de.envite.aws-braket-connector"
+                 zeebe:modelerTemplateVersion="1"
+                 zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMiAyMiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIyIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIyLjIiIGZpbGw9IiNGRjk5MDAiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiIHRyYW5zZm9ybT0icm90YXRlKDYwIDExIDExKSIvPgogIDxlbGxpcHNlIGN4PSIxMSIgY3k9IjExIiByeD0iOSIgcnk9IjMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY5OTAwIiBzdHJva2Utd2lkdGg9IjEuMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTIwIDExIDExKSIvPgo8L3N2Zz4K">
+      <extensionElements>
+        <zeebe:taskDefinition type="de.envite:aws-braket-connector:1" retries="3" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="resultVariable" value="braketCheckResult" />
+          <zeebe:header key="resultExpression" value="= {braketStatus: response.status, braketResult: {taskArn: response.taskArn, status: response.status, result: response.result, resultS3Uri: response.resultS3Uri}}" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="= &quot;GET_TASK_RESULT&quot;" target="operationMode" />
+          <zeebe:input source="= accessKeyId" target="accessKeyId" />
+          <zeebe:input source="= secretAccessKey" target="secretAccessKey" />
+          <zeebe:input source="= region" target="region" />
+          <zeebe:input source="= braketTaskArn" target="taskArn" />
+        </zeebe:ioMapping>
+      </extensionElements>
+      <incoming>to-check</incoming>
+      <outgoing>to-gateway</outgoing>
+    </serviceTask>
+
+    <sequenceFlow id="to-gateway" sourceRef="check-task" targetRef="status-gateway" />
+
+    <exclusiveGateway id="status-gateway" name="Task&#10;terminated?" default="to-timer-loop">
+      <incoming>to-gateway</incoming>
+      <outgoing>to-timer-loop</outgoing>
+      <outgoing>to-review</outgoing>
+    </exclusiveGateway>
+
+    <sequenceFlow id="to-timer-loop" name="No" sourceRef="status-gateway" targetRef="poll-timer" />
+
+    <sequenceFlow id="to-review" name="Yes" sourceRef="status-gateway" targetRef="review-task">
+      <conditionExpression xsi:type="tFormalExpression">= braketStatus in ["COMPLETED","FAILED","CANCELLED"]</conditionExpression>
+    </sequenceFlow>
+
+    <userTask id="review-task" name="Review&#10;quantum result">
+      <extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="braket-result-form" />
+      </extensionElements>
+      <incoming>to-review</incoming>
+      <outgoing>to-end</outgoing>
+    </userTask>
+
+    <sequenceFlow id="to-end" sourceRef="review-task" targetRef="end" />
+
+    <endEvent id="end" name="Quantum task&#10;completed">
+      <incoming>to-end</incoming>
+    </endEvent>
+
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="braket-example-workflow-polling">
+
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="162" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="138" y="142" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="submit-task_di" bpmnElement="submit-task">
+        <dc:Bounds x="260" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="poll-timer_di" bpmnElement="poll-timer">
+        <dc:Bounds x="432" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="424" y="142" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="check-task_di" bpmnElement="check-task">
+        <dc:Bounds x="530" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="status-gateway_di" bpmnElement="status-gateway" isMarkerVisible="true">
+        <dc:Bounds x="705" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="692" y="149" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="review-task_di" bpmnElement="review-task">
+        <dc:Bounds x="830" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="1002" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="978" y="142" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="to-submit_di" bpmnElement="to-submit">
+        <di:waypoint x="198" y="117" />
+        <di:waypoint x="260" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-timer_di" bpmnElement="to-timer">
+        <di:waypoint x="360" y="117" />
+        <di:waypoint x="432" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-check_di" bpmnElement="to-check">
+        <di:waypoint x="468" y="117" />
+        <di:waypoint x="530" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-gateway_di" bpmnElement="to-gateway">
+        <di:waypoint x="630" y="117" />
+        <di:waypoint x="705" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-timer-loop_di" bpmnElement="to-timer-loop">
+        <di:waypoint x="730" y="92" />
+        <di:waypoint x="730" y="40" />
+        <di:waypoint x="450" y="40" />
+        <di:waypoint x="450" y="99" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="576" y="22" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-review_di" bpmnElement="to-review">
+        <di:waypoint x="755" y="117" />
+        <di:waypoint x="830" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="778" y="99" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-end_di" bpmnElement="to-end">
+        <di:waypoint x="930" y="117" />
+        <di:waypoint x="1002" y="117" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</definitions>

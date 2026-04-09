@@ -1,0 +1,80 @@
+{
+  "id": "braket-input-form",
+  "type": "default",
+  "schemaVersion": 12,
+  "components": [
+    {
+      "type": "textfield",
+      "key": "accessKeyId",
+      "label": "AWS Access Key ID",
+      "description": "Store your AWS credentials as Camunda secrets and reference them here, e.g. secrets.AWS_ACCESS_KEY_ID.",
+      "validate": { "required": true }
+    },
+    {
+      "type": "textfield",
+      "key": "secretAccessKey",
+      "label": "AWS Secret Access Key",
+      "description": "e.g. secrets.AWS_SECRET_ACCESS_KEY",
+      "validate": { "required": true }
+    },
+    {
+      "type": "textfield",
+      "key": "region",
+      "label": "AWS Region",
+      "defaultValue": "us-east-1",
+      "validate": { "required": true }
+    },
+    {
+      "type": "textfield",
+      "key": "deviceArn",
+      "label": "Device ARN",
+      "description": "Full ARN of the target quantum device or simulator, e.g. arn:aws:braket:::device/quantum-simulator/amazon/sv1",
+      "defaultValue": "arn:aws:braket:::device/quantum-simulator/amazon/sv1",
+      "validate": { "required": true }
+    },
+    {
+      "type": "select",
+      "key": "circuitInputMode",
+      "label": "Circuit Input Mode",
+      "defaultValue": "OPEN_QASM",
+      "values": [
+        { "label": "OpenQASM 3",           "value": "OPEN_QASM" },
+        { "label": "Direct Params (JSON)", "value": "DIRECT_PARAMS" }
+      ]
+    },
+    {
+      "type": "textarea",
+      "key": "circuit",
+      "label": "Quantum Circuit (OpenQASM 3)",
+      "description": "OpenQASM 3 circuit to execute. Braket does not transpile — use gates supported by the target device.",
+      "defaultValue": "OPENQASM 3.0;\nqubit[1] q;\nx q[0];"
+    },
+    {
+      "type": "number",
+      "key": "shots",
+      "label": "Shots",
+      "defaultValue": 1000,
+      "description": "Number of circuit repetitions. Used in OpenQASM mode only."
+    },
+    {
+      "type": "textarea",
+      "key": "params",
+      "label": "Braket IR Action (JSON)",
+      "description": "Complete Braket IR action JSON string. Required when Circuit Input Mode is Direct Params."
+    },
+    {
+      "type": "textfield",
+      "key": "s3ResultBucket",
+      "label": "S3 Result Bucket",
+      "description": "S3 bucket where Braket writes task results. Must be in the same AWS region.",
+      "validate": { "required": true }
+    },
+    {
+      "type": "textfield",
+      "key": "s3KeyPrefix",
+      "label": "S3 Key Prefix",
+      "defaultValue": "braket-results",
+      "validate": { "required": true }
+    }
+  ]
+}
