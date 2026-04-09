@@ -191,10 +191,10 @@
 
     {
       "label": "Wait for Result",
-      "description": "Poll until the task reaches a terminal state before completing the task. Disable this and use <em>Get Task Result</em> in a BPMN timer loop to avoid timeouts on long-running quantum tasks.",
+      "description": "Poll until the task reaches a terminal state before completing the task. Keep this <strong>disabled</strong> (default) and use <em>Get Task Result</em> in a BPMN timer loop — enabling it risks a Camunda job worker timeout while waiting for QPU queue times that can exceed several minutes.",
       "group": "execution",
       "type": "Boolean",
-      "value": "true",
+      "value": "false",
       "binding": { "type": "zeebe:input", "name": "waitForResult" },
       "condition": { "property": "operationMode", "equals": "SUBMIT_TASK" }
     },

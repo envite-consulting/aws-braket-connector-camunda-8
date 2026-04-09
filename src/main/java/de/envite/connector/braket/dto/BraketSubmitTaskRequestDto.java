@@ -87,9 +87,13 @@ public class BraketSubmitTaskRequestDto extends BraketBaseRequestDto {
     @NotEmpty
     private final String s3KeyPrefix;
 
-    /** When {@code true} the connector polls until the task reaches a terminal state. */
+    /**
+     * When {@code true} the connector polls until the task reaches a terminal state.
+     * Defaults to {@code false} — use the {@code GET_TASK_RESULT} operation in a BPMN timer loop
+     * instead, to avoid Camunda job worker timeouts on long-running QPU tasks.
+     */
     @Builder.Default
-    private final Boolean waitForResult = true;
+    private final Boolean waitForResult = false;
 
     /** Maximum time in seconds to wait for a result before failing. */
     @Min(1)
