@@ -26,7 +26,54 @@ TODO
 
 ## 🚀 How to Run
 
-TODO
+### Prerequisites
+
+- **Java 21**
+- **Maven 3.8+**
+- A running **Camunda 8** instance (SaaS or Self-Managed)
+- An **AWS account** with an IAM user or role that has permission to call `braket:CreateQuantumTask`, `braket:GetQuantumTask`, and `s3:GetObject` on the result bucket
+
+### 1. Configure the Connector
+
+Edit `src/main/resources/application.properties` with your Camunda 8 connection details:
+
+```properties
+camunda.client.grpc-address=grpcs://<cluster-id>.<region>.zeebe.camunda.io:443
+camunda.client.rest-address=https://<region>.zeebe.camunda.io/<cluster-id>
+camunda.client.auth.client-id=<your-client-id>
+camunda.client.auth.client-secret=<your-client-secret>
+```
+
+AWS credentials are **not** stored in `application.properties` — they are supplied per task via the connector input fields (`accessKeyId`, `secretAccessKey`, and optionally `sessionToken`).
+Use [Camunda Secrets](https://docs.camunda.io/docs/components/console/manage-clusters/manage-secrets/) to store them securely and reference them in the element template or BPMN input mappings as `secrets.AWS_ACCESS_KEY_ID`, `secrets.AWS_SECRET_ACCESS_KEY`, etc.
+
+### 2. Build and Run
+
+```bash
+mvn spring-boot:run
+```
+
+The connector registers itself as a Camunda job worker and starts polling for jobs of type `de.envite:aws-braket-connector:1`.
+
+### 3. Import the Element Template
+
+Import `element-templates/braket-connector.json` into your Camunda Modeler to get the pre-configured service task with all input fields and the AWS Braket icon:
+
+- **Camunda Web Modeler**: go to your project → *Create new* → *Upload files* → select `element-templates/braket-connector.json`. Afterward, open the element template and publish it to the project or organization.
+- **Camunda Desktop Modeler**: copy the file into the `resources/element-templates` directory of the modeler.
+
+### 4. Model and Deploy a Process
+
+An example polling workflow is provided in `example/` (see description above).
+Upload the workflow together with its forms to your Camunda cluster — either via Camunda Web Modeler or the Zeebe API:
+
+- `example/braket-example-workflow-polling.bpmn`
+- `example/braket-input-form.form`
+- `example/braket-result-form.form`
+
+In case you published the element template to a project, upload the workflow to the **same project** so Web Modeler automatically links the template and displays the connector with its icon.
+
+To model your own process, add a service task and apply the **AWS Braket Connector** element template, then fill in the required properties.
 
 ## 📚 Connector Documentation
 
