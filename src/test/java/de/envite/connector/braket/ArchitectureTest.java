@@ -43,12 +43,19 @@ class ArchitectureTest {
                     .because("BraketConnectorFunction must delegate to BraketService, not call other classes directly");
 
     @ArchTest
+    static final ArchRule connector_must_not_bypass_service_to_s3_client =
+            noClasses().that().haveSimpleName("BraketConnectorFunction")
+                    .should().dependOnClassesThat().haveSimpleName("BraketS3Client")
+                    .because("BraketConnectorFunction must delegate to BraketService, not call other classes directly");
+
+    @ArchTest
     static final ArchRule dtos_must_not_depend_on_service_or_infrastructure =
             noClasses().that().resideInAPackage("..dto..")
                     .should().dependOnClassesThat().haveSimpleName("BraketService")
                     .orShould().dependOnClassesThat().haveSimpleName("BraketAuthProvider")
                     .orShould().dependOnClassesThat().haveSimpleName("BraketTaskClient")
                     .orShould().dependOnClassesThat().haveSimpleName("BraketParameterHandler")
+                    .orShould().dependOnClassesThat().haveSimpleName("BraketS3Client")
                     .because("DTOs are plain data objects and must not depend on service or infrastructure classes");
 
     // -------------------------------------------------------------------------

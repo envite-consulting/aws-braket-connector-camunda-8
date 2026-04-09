@@ -2,6 +2,7 @@ package de.envite.connector.braket;
 
 import de.envite.connector.braket.dto.BraketBaseRequestDto;
 import de.envite.connector.braket.dto.BraketSubmitTaskRequestDto;
+import de.envite.connector.braket.dto.BraketTaskDetailsDto;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -9,6 +10,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.braket.BraketClient;
 import software.amazon.awssdk.services.braket.model.CreateQuantumTaskRequest;
 import software.amazon.awssdk.services.braket.model.GetQuantumTaskRequest;
+import software.amazon.awssdk.services.braket.model.GetQuantumTaskResponse;
 
 import java.time.Instant;
 import java.util.Set;
@@ -56,15 +58,25 @@ public class BraketTaskClient {
     }
 
     /**
-     * Fetches the current status of a task (single request, no polling).
+     * Fetches the current status and S3 output coordinates of a task (single request, no polling).
+     *
+     * <p>The S3 coordinates are always present in the response regardless of task status,
+     * so they can be used immediately once the task is {@code COMPLETED}.</p>
      *
      * @param request connector request carrying AWS credentials and region
      * @param taskArn ARN of the task to query
-     * @return current task status string (e.g. {@code QUEUED}, {@code COMPLETED})
+     * @return task status together with the S3 bucket and key prefix for the result
      */
-    public String getTaskStatus(BraketBaseRequestDto request, String taskArn) {
+    public BraketTaskDetailsDto getTaskDetails(BraketBaseRequestDto request, String taskArn) {
         try (BraketClient client = buildClient(request)) {
-            return fetchStatus(client, taskArn);
+            GetQuantumTaskResponse response = client.getQuantumTask(
+                    GetQuantumTaskRequest.builder().quantumTaskArn(taskArn).build()
+            );
+            return new BraketTaskDetailsDto(
+                    response.statusAsString(),
+                    response.outputS3Bucket(),
+                    response.outputS3Directory()
+            );
         }
     }
 

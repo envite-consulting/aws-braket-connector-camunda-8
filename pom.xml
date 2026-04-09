@@ -60,6 +60,11 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>braket</artifactId>
         </dependency>
+        <!-- AWS SDK for S3 – fetches task results written by Braket -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
         <!-- Web server – needed for /actuator/health and ObjectMapper auto-configuration -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
