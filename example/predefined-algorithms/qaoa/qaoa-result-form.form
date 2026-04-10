@@ -1,0 +1,52 @@
+{
+  "id": "qaoa-result-form",
+  "type": "default",
+  "schemaVersion": 12,
+  "components": [
+    {
+      "type": "textfield",
+      "key": "bestPartition",
+      "label": "Best Partition",
+      "description": "Bitstring encoding the optimal node partition found. Each character is a node: '0' = partition A, '1' = partition B. E.g. '0110' puts nodes 1,2 in B and nodes 0,3 in A.",
+      "readonly": true
+    },
+    {
+      "type": "number",
+      "key": "bestCutWeight",
+      "label": "Best Cut Weight",
+      "description": "Actual MaxCut value of the best partition — the total weight of edges crossing between the two node sets. Higher is better.",
+      "readonly": true
+    },
+    {
+      "type": "number",
+      "key": "objectiveValue",
+      "label": "SPSA Objective Value",
+      "description": "Expected cut weight averaged over all measured bitstrings (negative, as SPSA minimizes). Lower (more negative) is better.",
+      "readonly": true
+    },
+    {
+      "type": "number",
+      "key": "iteration",
+      "label": "Iterations",
+      "description": "Last BPMN loop iteration index (0 = first iteration). Total Braket tasks executed equals this value plus one.",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "convergenceReason",
+      "label": "Convergence Reason",
+      "description": "\"converged\": optimizer reached a stable solution. \"max_iterations\": stopped at the iteration cap.",
+      "readonly": true
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "textfield",
+      "key": "braketResult.resultS3Uri",
+      "label": "Result S3 URI",
+      "description": "S3 location of the last Braket task result.",
+      "readonly": true
+    }
+  ]
+}

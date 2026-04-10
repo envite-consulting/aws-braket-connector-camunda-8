@@ -1,0 +1,34 @@
+{
+  "id": "qaoa-task-failure-form",
+  "type": "default",
+  "schemaVersion": 12,
+  "components": [
+    {
+      "type": "textfield",
+      "key": "braketResult.status",
+      "label": "Task Status",
+      "description": "Terminal status reported by AWS Braket.",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "braketResult.taskArn",
+      "label": "Task ARN",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "braketResult.resultS3Uri",
+      "label": "Result S3 URI",
+      "description": "S3 location of the task output. May contain partial results or an error log.",
+      "readonly": true
+    },
+    {
+      "type": "number",
+      "key": "iteration",
+      "label": "Failed at iteration",
+      "description": "SPSA iteration at which the task failed (0 = first iteration).",
+      "readonly": true
+    }
+  ]
+}

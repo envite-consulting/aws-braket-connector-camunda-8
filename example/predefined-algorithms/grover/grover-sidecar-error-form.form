@@ -1,0 +1,14 @@
+{
+  "id": "grover-sidecar-error-form",
+  "type": "default",
+  "schemaVersion": 12,
+  "components": [
+    {
+      "type": "textfield",
+      "key": "sidecarUrl",
+      "label": "Sidecar URL",
+      "description": "The URL that was called. Verify the sidecar is running and reachable at this address.",
+      "readonly": true
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "id": "grover-input-form",
+  "type": "default",
+  "schemaVersion": 12,
+  "components": [
+    {
+      "type": "textfield",
+      "key": "problem.target",
+      "label": "Target Bitstring",
+      "description": "Bitstring to search for, e.g. \"11\" searches a 2-qubit space, \"101\" a 3-qubit space.",
+      "defaultValue": "11",
+      "validate": { "required": true }
+    },
+    {
+      "type": "number",
+      "key": "problem.shots",
+      "label": "Shots",
+      "description": "Number of circuit repetitions.",
+      "defaultValue": 1000
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "textfield",
+      "key": "sidecarUrl",
+      "label": "Sidecar URL",
+      "description": "Base URL of the quantum algorithm sidecar. Use the Docker service name when running via docker compose.",
+      "defaultValue": "http://quantum-sidecar:5000",
+      "validate": { "required": true }
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "textfield",
+      "key": "accessKeyId",
+      "label": "AWS Access Key ID",
+      "description": "Use a Camunda secret: secrets.AWS_ACCESS_KEY_ID",
+      "validate": { "required": true }
+    },
+    {
+      "type": "textfield",
+      "key": "secretAccessKey",
+      "label": "AWS Secret Access Key",
+      "description": "Use a Camunda secret: secrets.AWS_SECRET_ACCESS_KEY",
+      "validate": { "required": true }
+    },
+    {
+      "type": "textfield",
+      "key": "region",
+      "label": "AWS Region",
+      "defaultValue": "us-east-1",
+      "validate": { "required": true }
+    },
+    {
+      "type": "textfield",
+      "key": "deviceArn",
+      "label": "Device ARN",
+      "description": "Full ARN of the target quantum device or simulator.",
+      "defaultValue": "arn:aws:braket:::device/quantum-simulator/amazon/sv1",
+      "validate": { "required": true }
+    },
+    {
+      "type": "textfield",
+      "key": "s3ResultBucket",
+      "label": "S3 Result Bucket",
+      "description": "S3 bucket where Braket writes task results. Must be in the same AWS region.",
+      "validate": { "required": true }
+    },
+    {
+      "type": "textfield",
+      "key": "s3KeyPrefix",
+      "label": "S3 Key Prefix",
+      "defaultValue": "braket-results"
+    }
+  ]
+}

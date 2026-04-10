@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+             xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             targetNamespace="http://bpmn.io/schema/bpmn"
+             modeler:executionPlatform="Camunda Cloud"
+             modeler:executionPlatformVersion="8.8.0">
+
+  <!--
+    Grover's Search – AWS Braket Algorithm Accelerator Blueprint
+    ─────────────────────────────────────────────────────────────
+    Demonstrates the sidecar pattern for the AWS Braket Connector.
+    The Braket Connector is used unchanged for Submit/Poll. A lightweight sidecar
+    handles circuit generation (POST /generate-circuit) and classical post-processing
+    (POST /process-results). The connector and the sidecar are independent components.
+
+    The sidecar uses the amazon-braket-sdk or PennyLane to build the Grover circuit and
+    post-processes measurementProbabilities from the Braket S3 result.
+
+    Expected process variables at start (via grover-input-form):
+      problem        – object: { "target": "11", "shots": 1000 }
+      sidecarUrl     – string: base URL of the quantum algorithm sidecar, e.g. http://quantum-sidecar:5000
+      accessKeyId    – string: AWS access key ID (use secret: {{secrets.AWS_ACCESS_KEY_ID}})
+      secretAccessKey – string: AWS secret access key (use secret: {{secrets.AWS_SECRET_ACCESS_KEY}})
+      region         – string: AWS region, e.g. us-east-1
+      deviceArn      – string: full ARN of the target Braket device
+      s3ResultBucket – string: S3 bucket for Braket results
+      s3KeyPrefix    – string: S3 key prefix for Braket results
+  -->
+
+  <error id="sidecar-error" name="Sidecar Error" errorCode="SIDECAR_ERROR" />
+
+  <process id="grover-search-workflow" name="Grover&#x2019;s Search &#x2013; AWS Braket Blueprint" isExecutable="true">
+
+    <extensionElements>
+      <zeebe:properties>
+        <zeebe:property name="description" value="Blueprint for Grover&#x27;s search using the AWS Braket Algorithm Accelerator pattern. A sidecar generates the OpenQASM circuit from classical problem parameters; the Braket Connector submits and polls the task unchanged; the sidecar post-processes measurementProbabilities from the S3 result into a classical answer." />
+      </zeebe:properties>
+    </extensionElements>
+
+    <!-- ── 0. Start ─────────────────────────────────────────────────────── -->
+
+    <startEvent id="start" name="Search&#10;problem submitted">
+      <extensionElements>
+        <zeebe:formDefinition formId="grover-input-form" />
+      </extensionElements>
+      <outgoing>to-generate</outgoing>
+    </startEvent>
+
+    <sequenceFlow id="to-generate" sourceRef="start" targetRef="generate-circuit" />
+
+    <!-- ── 1. Generate Grover circuit via sidecar ────────────────────────
+         Calls POST /generate-circuit on the sidecar.
+         The sidecar builds a transpiled OpenQASM 3 Grover circuit for the target device.
+         Result expression maps the response to circuit + shots process variables.
+    -->
+
+    <serviceTask id="generate-circuit" name="Generate&#10;Grover Circuit">
+      <extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="resultVariable" value="generateCircuitResult" />
+          <zeebe:header key="resultExpression" value="= {circuit: response.body.circuit, shots: response.body.shots}" />
+          <zeebe:header key="errorExpression" value="= if error.code != null then bpmnError(&quot;SIDECAR_ERROR&quot;, string(error.code) + &quot; – &quot; + (if error.message != null then error.message else &quot;Could not reach sidecar&quot;)) else null" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="= sidecarUrl + &quot;/generate-circuit&quot;" target="url" />
+          <zeebe:input source="= &quot;POST&quot;" target="method" />
+          <zeebe:input source="= {&quot;Content-Type&quot;: &quot;application/json&quot;}" target="headers" />
+          <zeebe:input source="= {algorithm: &quot;grover&quot;, problem: problem, deviceArn: deviceArn}" target="body" />
+        </zeebe:ioMapping>
+      </extensionElements>
+      <incoming>to-generate</incoming>
+      <outgoing>to-submit</outgoing>
+    </serviceTask>
+
+    <boundaryEvent id="generate-circuit-error" name="Sidecar&#10;error" attachedToRef="generate-circuit" cancelActivity="true">
+      <outgoing>to-sidecar-error-from-generate</outgoing>
+      <errorEventDefinition id="generate-circuit-error-def" errorRef="sidecar-error" />
+    </boundaryEvent>
+
+    <sequenceFlow id="to-sidecar-error-from-generate" sourceRef="generate-circuit-error" targetRef="sidecar-error-gateway" />
+
+    <sequenceFlow id="to-submit" sourceRef="generate-circuit" targetRef="submit-task" />
+
+    <!-- ── 2. Submit quantum circuit ─────────────────────────────────────
+         Standard AWS Braket Connector (SUBMIT_TASK, waitForResult=false).
+         circuit and shots come from the generate-circuit result expression above.
+    -->
+
+    <serviceTask id="submit-task" name="Submit&#10;quantum circuit"
+                 zeebe:modelerTemplate="de.envite.aws-braket-connector"
+                 zeebe:modelerTemplateVersion="1"
+                 zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMiAyMiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIyIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIyLjIiIGZpbGw9IiNGRjk5MDAiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiIHRyYW5zZm9ybT0icm90YXRlKDYwIDExIDExKSIvPgogIDxlbGxpcHNlIGN4PSIxMSIgY3k9IjExIiByeD0iOSIgcnk9IjMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY5OTAwIiBzdHJva2Utd2lkdGg9IjEuMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTIwIDExIDExKSIvPgo8L3N2Zz4K">
+      <extensionElements>
+        <zeebe:taskDefinition type="de.envite:aws-braket-connector:1" retries="3" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="resultVariable" value="braketSubmitResult" />
+          <zeebe:header key="resultExpression" value="= {braketTaskArn: response.taskArn, braketResultS3Uri: response.resultS3Uri}" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="= &quot;SUBMIT_TASK&quot;" target="operationMode" />
+          <zeebe:input source="= false" target="waitForResult" />
+          <zeebe:input source="= accessKeyId" target="accessKeyId" />
+          <zeebe:input source="= secretAccessKey" target="secretAccessKey" />
+          <zeebe:input source="= region" target="region" />
+          <zeebe:input source="= deviceArn" target="deviceArn" />
+          <zeebe:input source="= &quot;OPEN_QASM&quot;" target="circuitInputMode" />
+          <zeebe:input source="= circuit" target="circuit" />
+          <zeebe:input source="= shots" target="shots" />
+          <zeebe:input source="= s3ResultBucket" target="s3ResultBucket" />
+          <zeebe:input source="= s3KeyPrefix" target="s3KeyPrefix" />
+        </zeebe:ioMapping>
+      </extensionElements>
+      <incoming>to-submit</incoming>
+      <outgoing>to-timer</outgoing>
+    </serviceTask>
+
+    <sequenceFlow id="to-timer" sourceRef="submit-task" targetRef="poll-timer" />
+
+    <!-- ── 3. Poll timer ──────────────────────────────────────────────── -->
+
+    <intermediateCatchEvent id="poll-timer" name="Wait 60s">
+      <incoming>to-timer</incoming>
+      <incoming>to-timer-loop</incoming>
+      <outgoing>to-check</outgoing>
+      <timerEventDefinition id="poll-timer-def">
+        <timeDuration xsi:type="tFormalExpression">PT60S</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+
+    <sequenceFlow id="to-check" sourceRef="poll-timer" targetRef="check-task" />
+
+    <!-- ── 4. Check task result ───────────────────────────────────────── -->
+
+    <serviceTask id="check-task" name="Check task&#10;result"
+                 zeebe:modelerTemplate="de.envite.aws-braket-connector"
+                 zeebe:modelerTemplateVersion="1"
+                 zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMiAyMiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIyIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIyLjIiIGZpbGw9IiNGRjk5MDAiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiIHRyYW5zZm9ybT0icm90YXRlKDYwIDExIDExKSIvPgogIDxlbGxpcHNlIGN4PSIxMSIgY3k9IjExIiByeD0iOSIgcnk9IjMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY5OTAwIiBzdHJva2Utd2lkdGg9IjEuMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTIwIDExIDExKSIvPgo8L3N2Zz4K">
+      <extensionElements>
+        <zeebe:taskDefinition type="de.envite:aws-braket-connector:1" retries="3" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="resultVariable" value="braketCheckResult" />
+          <zeebe:header key="resultExpression" value="= {braketStatus: response.status, braketResult: {taskArn: response.taskArn, status: response.status, result: response.result, resultS3Uri: response.resultS3Uri}}" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="= &quot;GET_TASK_RESULT&quot;" target="operationMode" />
+          <zeebe:input source="= accessKeyId" target="accessKeyId" />
+          <zeebe:input source="= secretAccessKey" target="secretAccessKey" />
+          <zeebe:input source="= region" target="region" />
+          <zeebe:input source="= braketTaskArn" target="taskArn" />
+        </zeebe:ioMapping>
+      </extensionElements>
+      <incoming>to-check</incoming>
+      <outgoing>to-gateway</outgoing>
+    </serviceTask>
+
+    <sequenceFlow id="to-gateway" sourceRef="check-task" targetRef="status-gateway" />
+
+    <!-- ── 5. Status gateway ──────────────────────────────────────────── -->
+
+    <exclusiveGateway id="status-gateway" name="Task&#10;status?" default="to-timer-loop">
+      <incoming>to-gateway</incoming>
+      <outgoing>to-timer-loop</outgoing>
+      <outgoing>to-process-results</outgoing>
+      <outgoing>to-task-failed</outgoing>
+    </exclusiveGateway>
+
+    <sequenceFlow id="to-timer-loop" name="Running" sourceRef="status-gateway" targetRef="poll-timer" />
+
+    <sequenceFlow id="to-process-results" name="Completed" sourceRef="status-gateway" targetRef="process-results">
+      <conditionExpression xsi:type="tFormalExpression">= braketStatus = "COMPLETED"</conditionExpression>
+    </sequenceFlow>
+
+    <sequenceFlow id="to-task-failed" name="Failed / Cancelled" sourceRef="status-gateway" targetRef="review-task-failure">
+      <conditionExpression xsi:type="tFormalExpression">= braketStatus in ["FAILED","CANCELLED"]</conditionExpression>
+    </sequenceFlow>
+
+    <!-- ── 6. Post-process quantum results via sidecar ───────────────────
+         Calls POST /process-results on the sidecar.
+         Passes braketResult.result (measurementProbabilities map) to the sidecar.
+         Result expression maps the classical answer to classicalResult.
+    -->
+
+    <serviceTask id="process-results" name="Process&#10;quantum results">
+      <extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="resultVariable" value="processResultsOutput" />
+          <zeebe:header key="resultExpression" value="= {classicalResult: response.body}" />
+          <zeebe:header key="errorExpression" value="= if error.code != null then bpmnError(&quot;SIDECAR_ERROR&quot;, string(error.code) + &quot; – &quot; + (if error.message != null then error.message else &quot;Could not reach sidecar&quot;)) else null" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="= sidecarUrl + &quot;/process-results&quot;" target="url" />
+          <zeebe:input source="= &quot;POST&quot;" target="method" />
+          <zeebe:input source="= {&quot;Content-Type&quot;: &quot;application/json&quot;}" target="headers" />
+          <zeebe:input source="= {algorithm: &quot;grover&quot;, problem: problem, results: braketResult.result}" target="body" />
+        </zeebe:ioMapping>
+      </extensionElements>
+      <incoming>to-process-results</incoming>
+      <outgoing>to-review</outgoing>
+    </serviceTask>
+
+    <boundaryEvent id="process-results-error" name="Sidecar&#10;error" attachedToRef="process-results" cancelActivity="true">
+      <outgoing>to-sidecar-error-from-process</outgoing>
+      <errorEventDefinition id="process-results-error-def" errorRef="sidecar-error" />
+    </boundaryEvent>
+
+    <sequenceFlow id="to-sidecar-error-from-process" sourceRef="process-results-error" targetRef="sidecar-error-gateway" />
+
+    <sequenceFlow id="to-review" sourceRef="process-results" targetRef="review" />
+
+    <!-- ── 7a. Sidecar error review ──────────────────────────────────── -->
+
+    <exclusiveGateway id="sidecar-error-gateway">
+      <incoming>to-sidecar-error-from-generate</incoming>
+      <incoming>to-sidecar-error-from-process</incoming>
+      <outgoing>to-review-sidecar-error</outgoing>
+    </exclusiveGateway>
+
+    <sequenceFlow id="to-review-sidecar-error" sourceRef="sidecar-error-gateway" targetRef="review-sidecar-error" />
+
+    <userTask id="review-sidecar-error" name="Review&#10;sidecar error">
+      <extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="grover-sidecar-error-form" />
+      </extensionElements>
+      <incoming>to-review-sidecar-error</incoming>
+      <outgoing>to-end-sidecar-error</outgoing>
+    </userTask>
+
+    <sequenceFlow id="to-end-sidecar-error" sourceRef="review-sidecar-error" targetRef="end-sidecar-error" />
+
+    <endEvent id="end-sidecar-error" name="Sidecar&#10;error">
+      <incoming>to-end-sidecar-error</incoming>
+    </endEvent>
+
+    <!-- ── 7b. Task failure review ───────────────────────────────────── -->
+
+    <userTask id="review-task-failure" name="Review&#10;task failure">
+      <extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="grover-task-failure-form" />
+      </extensionElements>
+      <incoming>to-task-failed</incoming>
+      <outgoing>to-end-failed</outgoing>
+    </userTask>
+
+    <sequenceFlow id="to-end-failed" sourceRef="review-task-failure" targetRef="end-failed" />
+
+    <endEvent id="end-failed" name="Task&#10;failed">
+      <incoming>to-end-failed</incoming>
+    </endEvent>
+
+    <!-- ── 7c. Human review ───────────────────────────────────────────── -->
+
+    <userTask id="review" name="Review&#10;search result">
+      <extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="grover-result-form" />
+      </extensionElements>
+      <incoming>to-review</incoming>
+      <outgoing>to-end</outgoing>
+    </userTask>
+
+    <sequenceFlow id="to-end" sourceRef="review" targetRef="end" />
+
+    <endEvent id="end" name="Search&#10;complete">
+      <incoming>to-end</incoming>
+    </endEvent>
+
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="grover-search-workflow">
+
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="144" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="120" y="142" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="generate-circuit_di" bpmnElement="generate-circuit">
+        <dc:Bounds x="250" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="submit-task_di" bpmnElement="submit-task">
+        <dc:Bounds x="420" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="poll-timer_di" bpmnElement="poll-timer">
+        <dc:Bounds x="592" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="589" y="83" width="42" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="check-task_di" bpmnElement="check-task">
+        <dc:Bounds x="690" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="status-gateway_di" bpmnElement="status-gateway" isMarkerVisible="true">
+        <dc:Bounds x="865" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="842" y="76" width="36" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="process-results_di" bpmnElement="process-results">
+        <dc:Bounds x="990" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="review_di" bpmnElement="review">
+        <dc:Bounds x="1160" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="1332" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1314" y="142" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="review-task-failure_di" bpmnElement="review-task-failure">
+        <dc:Bounds x="1160" y="-50" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="end-failed_di" bpmnElement="end-failed">
+        <dc:Bounds x="1332" y="-28" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1337" y="15" width="26" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="sidecar-error-gateway_di" bpmnElement="sidecar-error-gateway" isMarkerVisible="true">
+        <dc:Bounds x="1045" y="225" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="review-sidecar-error_di" bpmnElement="review-sidecar-error">
+        <dc:Bounds x="1160" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="end-sidecar-error_di" bpmnElement="end-sidecar-error">
+        <dc:Bounds x="1332" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1331" y="275" width="39" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="process-results-error_di" bpmnElement="process-results-error">
+        <dc:Bounds x="1052" y="139" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1080" y="176" width="39" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="generate-circuit-error_di" bpmnElement="generate-circuit-error">
+        <dc:Bounds x="302" y="139" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="330" y="176" width="39" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="to-generate_di" bpmnElement="to-generate">
+        <di:waypoint x="180" y="117" />
+        <di:waypoint x="250" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-sidecar-error-from-generate_di" bpmnElement="to-sidecar-error-from-generate">
+        <di:waypoint x="320" y="175" />
+        <di:waypoint x="320" y="250" />
+        <di:waypoint x="1045" y="250" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-submit_di" bpmnElement="to-submit">
+        <di:waypoint x="350" y="117" />
+        <di:waypoint x="420" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-timer_di" bpmnElement="to-timer">
+        <di:waypoint x="520" y="117" />
+        <di:waypoint x="592" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-check_di" bpmnElement="to-check">
+        <di:waypoint x="628" y="117" />
+        <di:waypoint x="690" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-gateway_di" bpmnElement="to-gateway">
+        <di:waypoint x="790" y="117" />
+        <di:waypoint x="865" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-timer-loop_di" bpmnElement="to-timer-loop">
+        <di:waypoint x="890" y="142" />
+        <di:waypoint x="890" y="200" />
+        <di:waypoint x="610" y="200" />
+        <di:waypoint x="610" y="135" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="899" y="173" width="42" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-process-results_di" bpmnElement="to-process-results">
+        <di:waypoint x="915" y="117" />
+        <di:waypoint x="990" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="914" y="99" width="54" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-task-failed_di" bpmnElement="to-task-failed">
+        <di:waypoint x="890" y="92" />
+        <di:waypoint x="890" y="-10" />
+        <di:waypoint x="1160" y="-10" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="896" y="43" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-sidecar-error-from-process_di" bpmnElement="to-sidecar-error-from-process">
+        <di:waypoint x="1070" y="175" />
+        <di:waypoint x="1070" y="225" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-review-sidecar-error_di" bpmnElement="to-review-sidecar-error">
+        <di:waypoint x="1095" y="250" />
+        <di:waypoint x="1160" y="250" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-review_di" bpmnElement="to-review">
+        <di:waypoint x="1090" y="117" />
+        <di:waypoint x="1160" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-end_di" bpmnElement="to-end">
+        <di:waypoint x="1260" y="117" />
+        <di:waypoint x="1332" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-end-failed_di" bpmnElement="to-end-failed">
+        <di:waypoint x="1260" y="-10" />
+        <di:waypoint x="1332" y="-10" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-end-sidecar-error_di" bpmnElement="to-end-sidecar-error">
+        <di:waypoint x="1260" y="250" />
+        <di:waypoint x="1332" y="250" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</definitions>
