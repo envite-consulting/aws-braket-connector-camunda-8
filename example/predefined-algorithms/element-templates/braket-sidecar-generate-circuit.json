@@ -1,0 +1,92 @@
+{
+  "$schema": "https://unpkg.com/@camunda/zeebe-element-templates-json-schema/resources/schema.json",
+  "name": "AWS Braket: Generate Circuit",
+  "id": "de.envite.braket-sidecar.generate-circuit",
+  "description": "Calls the quantum algorithm sidecar to translate classical problem parameters into an executable quantum circuit (POST /generate-circuit). Part of the AWS Braket Algorithm Accelerator pattern — requires the AWS Braket Connector.",
+  "version": 1,
+  "documentationRef": "https://github.com/envite/aws-braket-connector-camunda-8/blob/main/docs/use-predefined-algorithms.md",
+  "category": {
+    "id": "connectors",
+    "name": "Connectors"
+  },
+  "icon": {
+    "contents": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMiAyMiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIyIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIyLjIiIGZpbGw9IiNGRjk5MDAiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiIHRyYW5zZm9ybT0icm90YXRlKDYwIDExIDExKSIvPgogIDxlbGxpcHNlIGN4PSIxMSIgY3k9IjExIiByeD0iOSIgcnk9IjMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY5OTAwIiBzdHJva2Utd2lkdGg9IjEuMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTIwIDExIDExKSIvPgo8L3N2Zz4K"
+  },
+  "appliesTo": ["bpmn:ServiceTask"],
+  "elementType": {
+    "value": "bpmn:ServiceTask"
+  },
+  "groups": [
+    { "id": "sidecar",   "label": "Algorithm Sidecar" },
+    { "id": "algorithm", "label": "Algorithm" },
+    { "id": "output",    "label": "Output Mapping" },
+    { "id": "error",     "label": "Error Handling" }
+  ],
+  "properties": [
+    {
+      "type": "Hidden",
+      "value": "io.camunda:http-json:1",
+      "binding": { "type": "zeebe:taskDefinition", "property": "type" }
+    },
+
+    {
+      "label": "Generate Circuit URL",
+      "description": "Full URL of the sidecar's <code>/generate-circuit</code> endpoint. The default FEEL expression appends the path to the <code>sidecarUrl</code> process variable.",
+      "group": "sidecar",
+      "type": "String",
+      "feel": "optional",
+      "value": "= sidecarUrl + \"/generate-circuit\"",
+      "binding": { "type": "zeebe:input", "name": "url" },
+      "constraints": { "notEmpty": true }
+    },
+    {
+      "type": "Hidden",
+      "value": "= \"POST\"",
+      "binding": { "type": "zeebe:input", "name": "method" }
+    },
+    {
+      "type": "Hidden",
+      "value": "= {\"Content-Type\": \"application/json\"}",
+      "binding": { "type": "zeebe:input", "name": "headers" }
+    },
+
+    {
+      "label": "Request Body (FEEL)",
+      "description": "FEEL object sent as the sidecar request body. Must include <code>algorithm</code>, <code>problem</code>, and <code>deviceArn</code> — the sidecar uses the device ARN to transpile the circuit for the target backend. For variational algorithms (e.g. QAOA) also include <code>params: currentParams</code>.",
+      "group": "algorithm",
+      "type": "Text",
+      "feel": "required",
+      "value": "= {algorithm: \"grover\", problem: problem, deviceArn: deviceArn}",
+      "binding": { "type": "zeebe:input", "name": "body" },
+      "constraints": { "notEmpty": true }
+    },
+
+    {
+      "label": "Result Variable",
+      "description": "Process variable to store the raw sidecar HTTP response",
+      "group": "output",
+      "type": "String",
+      "value": "generateCircuitResult",
+      "binding": { "type": "zeebe:taskHeader", "key": "resultVariable" }
+    },
+    {
+      "label": "Result Expression",
+      "description": "Maps the sidecar response to process variables consumed by the AWS Braket Connector. The sidecar returns <code>circuit</code> (OpenQASM 3 string) and <code>shots</code>. For variational algorithms also extract <code>params: response.body.params</code>.",
+      "group": "output",
+      "type": "Text",
+      "feel": "required",
+      "value": "= {circuit: response.body.circuit, shots: response.body.shots}",
+      "binding": { "type": "zeebe:taskHeader", "key": "resultExpression" }
+    },
+
+    {
+      "label": "Error Expression",
+      "description": "FEEL expression to map sidecar HTTP errors to BPMN errors",
+      "group": "error",
+      "type": "Text",
+      "feel": "required",
+      "optional": true,
+      "binding": { "type": "zeebe:taskHeader", "key": "errorExpression" }
+    }
+  ]
+}

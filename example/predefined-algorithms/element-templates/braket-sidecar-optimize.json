@@ -1,0 +1,92 @@
+{
+  "$schema": "https://unpkg.com/@camunda/zeebe-element-templates-json-schema/resources/schema.json",
+  "name": "AWS Braket: Optimize (SPSA)",
+  "id": "de.envite.braket-sidecar.optimize",
+  "description": "Calls the quantum algorithm sidecar to run one stateless SPSA optimizer step (POST /optimize). Returns either updated circuit parameters for the next iteration or a convergence signal. Part of the AWS Braket Algorithm Accelerator pattern — required for variational algorithms (QAOA, VQE).",
+  "version": 1,
+  "documentationRef": "https://github.com/envite/aws-braket-connector-camunda-8/blob/main/docs/use-predefined-algorithms.md",
+  "category": {
+    "id": "connectors",
+    "name": "Connectors"
+  },
+  "icon": {
+    "contents": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMiAyMiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIyIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIyLjIiIGZpbGw9IiNGRjk5MDAiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiIHRyYW5zZm9ybT0icm90YXRlKDYwIDExIDExKSIvPgogIDxlbGxpcHNlIGN4PSIxMSIgY3k9IjExIiByeD0iOSIgcnk9IjMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY5OTAwIiBzdHJva2Utd2lkdGg9IjEuMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTIwIDExIDExKSIvPgo8L3N2Zz4K"
+  },
+  "appliesTo": ["bpmn:ServiceTask"],
+  "elementType": {
+    "value": "bpmn:ServiceTask"
+  },
+  "groups": [
+    { "id": "sidecar",    "label": "Algorithm Sidecar" },
+    { "id": "optimizer",  "label": "Optimizer" },
+    { "id": "output",     "label": "Output Mapping" },
+    { "id": "error",      "label": "Error Handling" }
+  ],
+  "properties": [
+    {
+      "type": "Hidden",
+      "value": "io.camunda:http-json:1",
+      "binding": { "type": "zeebe:taskDefinition", "property": "type" }
+    },
+
+    {
+      "label": "Optimize URL",
+      "description": "Full URL of the sidecar's <code>/optimize</code> endpoint. The default FEEL expression appends the path to the <code>sidecarUrl</code> process variable.",
+      "group": "sidecar",
+      "type": "String",
+      "feel": "optional",
+      "value": "= sidecarUrl + \"/optimize\"",
+      "binding": { "type": "zeebe:input", "name": "url" },
+      "constraints": { "notEmpty": true }
+    },
+    {
+      "type": "Hidden",
+      "value": "= \"POST\"",
+      "binding": { "type": "zeebe:input", "name": "method" }
+    },
+    {
+      "type": "Hidden",
+      "value": "= {\"Content-Type\": \"application/json\"}",
+      "binding": { "type": "zeebe:input", "name": "headers" }
+    },
+
+    {
+      "label": "Request Body (FEEL)",
+      "description": "FEEL object sent as the optimizer request body. <code>current_params</code> holds the variational parameters just evaluated; <code>objective_value</code> is the scalar cost from <code>/process-results</code>; <code>best_bitstring</code> is the best measurement outcome so far; <code>optimizer_state</code> is the opaque state blob returned by the previous call (set to <code>{}</code> on the first iteration).",
+      "group": "optimizer",
+      "type": "Text",
+      "feel": "required",
+      "value": "= {algorithm: \"spsa\", iteration: if iteration != null then iteration else 0, problem: problem, current_params: currentParams, objective_value: objectiveValue, best_bitstring: currentBestBitstring, optimizer_state: if optimizerState != null then optimizerState else {}, hyperparams: {max_iterations: if maxIterations != null then maxIterations else 30}}",
+      "binding": { "type": "zeebe:input", "name": "body" },
+      "constraints": { "notEmpty": true }
+    },
+
+    {
+      "label": "Result Variable",
+      "description": "Process variable to store the raw sidecar HTTP response",
+      "group": "output",
+      "type": "String",
+      "value": "optimizeResult",
+      "binding": { "type": "zeebe:taskHeader", "key": "resultVariable" }
+    },
+    {
+      "label": "Result Expression",
+      "description": "Maps the sidecar response to process variables. <code>converged</code> drives the gateway after this task. When not converged, <code>currentParams</code> and <code>optimizerState</code> are updated for the next iteration. When converged, <code>optimalParams</code>, <code>bestPartition</code>, and <code>bestCutWeight</code> hold the final result.",
+      "group": "output",
+      "type": "Text",
+      "feel": "required",
+      "value": "= {converged: response.body.converged, convergenceReason: if response.body.converged then response.body.convergence_reason else null, iteration: response.body.iteration, optimizerState: if response.body.converged then {} else response.body.optimizer_state, currentParams: if response.body.converged then response.body.optimal_params else response.body.next_params, optimalParams: response.body.optimal_params, objectiveValue: response.body.objective_value, bestPartition: response.body.best_partition, bestCutWeight: response.body.best_cut_weight}",
+      "binding": { "type": "zeebe:taskHeader", "key": "resultExpression" }
+    },
+
+    {
+      "label": "Error Expression",
+      "description": "FEEL expression to map sidecar HTTP errors to BPMN errors",
+      "group": "error",
+      "type": "Text",
+      "feel": "required",
+      "optional": true,
+      "binding": { "type": "zeebe:taskHeader", "key": "errorExpression" }
+    }
+  ]
+}
