@@ -64,12 +64,12 @@ Import `element-templates/braket-connector.json` into your Camunda Modeler to ge
 
 ### 4. Model and Deploy a Process
 
-An example polling workflow is provided in `example/` (see description above).
+An example polling workflow is provided in `example/getting-started/` (see description above).
 Upload the workflow together with its forms to your Camunda cluster — either via Camunda Web Modeler or the Zeebe API:
 
-- `example/braket-example-workflow-polling.bpmn`
-- `example/braket-input-form.form`
-- `example/braket-result-form.form`
+- `example/getting-started/braket-example-workflow-polling.bpmn`
+- `example/getting-started/braket-input-form.form`
+- `example/getting-started/braket-result-form.form`
 
 In case you published the element template to a project, upload the workflow to the **same project** so Web Modeler automatically links the template and displays the connector with its icon.
 
