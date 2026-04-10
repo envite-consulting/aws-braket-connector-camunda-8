@@ -35,16 +35,16 @@ TODO
 
 ### 1. Configure the Connector
 
-Edit `src/main/resources/application.properties` with your Camunda 8 connection details:
+Set the following environment variables with your Camunda 8 connection details before starting the connector:
 
-```properties
-camunda.client.grpc-address=grpcs://<cluster-id>.<region>.zeebe.camunda.io:443
-camunda.client.rest-address=https://<region>.zeebe.camunda.io/<cluster-id>
-camunda.client.auth.client-id=<your-client-id>
-camunda.client.auth.client-secret=<your-client-secret>
+```bash
+CAMUNDA_CLIENT_ID=<your-client-id>
+CAMUNDA_CLIENT_SECRET=<your-client-secret>
+CAMUNDA_CLUSTER_ID=<your-cluster-id>
+CAMUNDA_CLIENT_REGION=<your-region>
 ```
 
-AWS credentials are **not** stored in `application.properties` — they are supplied per task via the connector input fields (`accessKeyId`, `secretAccessKey`, and optionally `sessionToken`).
+AWS credentials are **not** configured here — they are supplied per task via the connector input fields (`accessKeyId`, `secretAccessKey`, and optionally `sessionToken`).
 Use [Camunda Secrets](https://docs.camunda.io/docs/components/console/manage-clusters/manage-secrets/) to store them securely and reference them in the element template or BPMN input mappings as `secrets.AWS_ACCESS_KEY_ID`, `secrets.AWS_SECRET_ACCESS_KEY`, etc.
 
 ### 2. Build and Run
