@@ -124,12 +124,12 @@
 
     <!-- ── 3. Poll timer ──────────────────────────────────────────────── -->
 
-    <intermediateCatchEvent id="poll-timer" name="Wait 60s">
+    <intermediateCatchEvent id="poll-timer" name="Wait 15s">
       <incoming>to-timer</incoming>
       <incoming>to-timer-loop</incoming>
       <outgoing>to-check</outgoing>
       <timerEventDefinition id="poll-timer-def">
-        <timeDuration xsi:type="tFormalExpression">PT60S</timeDuration>
+        <timeDuration xsi:type="tFormalExpression">PT15S</timeDuration>
       </timerEventDefinition>
     </intermediateCatchEvent>
 
