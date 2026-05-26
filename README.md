@@ -46,8 +46,6 @@ Export your Camunda Cluster credentials from **Camunda Console → Clusters → 
 | `CAMUNDA_CLIENT_SECRET` | OAuth client secret |
 | `CAMUNDA_CLUSTER_ID` | Zeebe cluster UUID |
 | `CAMUNDA_REGION` | Cluster region (e.g. `bru-2`) |
-| `CAMUNDA_GRPC_ADDRESS` | gRPC endpoint (`grpcs://<cluster-id>.<region>.zeebe.camunda.io:443`) |
-| `CAMUNDA_REST_ADDRESS` | REST endpoint (`https://<region>.zeebe.camunda.io/<cluster-id>`) |
 
 AWS credentials are **not** configured here — they are supplied per task via the connector input fields (`accessKeyId`, `secretAccessKey`, and optionally `sessionToken`).
 Use [Camunda Secrets](https://docs.camunda.io/docs/components/console/manage-clusters/manage-secrets/) to store them securely and reference them as `secrets.AWS_ACCESS_KEY_ID`, `secrets.AWS_SECRET_ACCESS_KEY`, etc.
@@ -82,7 +80,7 @@ To model your own process, add a service task and apply the **AWS Braket Connect
 
 ## 📚 Connector Documentation
 
-TODO
+* [Getting Started](docs/getting-started.md): Details of how to get started with the AWS Braket Connector
 
 ## 🛠️ Development and Project Setup
 
