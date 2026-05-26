@@ -81,6 +81,11 @@ To model your own process, add a service task and apply the **AWS Braket Connect
 ## 📚 Connector Documentation
 
 * [Getting Started](docs/getting-started.md): Details of how to get started with the AWS Braket Connector
+* [Connector Configuration and Output Reference](docs/connector-reference.md): All configuration properties and the connector output fields available for use in result expressions and downstream tasks
+* [Using Predefined Quantum Algorithms via a Sidecar](docs/use-predefined-algorithms.md): Architecture and integration guide for using a AWS Braket sidecar to generate quantum circuits from classical problem inputs and post-process measurement results — including support for variational algorithms (VQE, QAOA) with classical optimizer loops.
+* [Example Use Cases & HowTos](docs/usecases.md): End-to-end workflow examples including Grover's search algorithm
+
+
 
 ## 🛠️ Development and Project Setup
 
