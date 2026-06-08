@@ -35,17 +35,20 @@ TODO
 
 ### 1. Configure the Connector
 
-Set the following environment variables with your Camunda 8 connection details before starting the connector:
+Copy `.env.example` to `.env` and fill in your values (never commit `.env` — it is gitignored):
 
-```bash
-CAMUNDA_CLIENT_ID=<your-client-id>
-CAMUNDA_CLIENT_SECRET=<your-client-secret>
-CAMUNDA_CLUSTER_ID=<your-cluster-id>
-CAMUNDA_CLIENT_REGION=<your-region>
-```
+
+Export your Camunda Cluster credentials from **Camunda Console → Clusters → \<your cluster\> → API**:
+
+| Variable | Description |
+|---|---|
+| `CAMUNDA_CLIENT_ID` | OAuth client ID |
+| `CAMUNDA_CLIENT_SECRET` | OAuth client secret |
+| `CAMUNDA_CLUSTER_ID` | Zeebe cluster UUID |
+| `CAMUNDA_REGION` | Cluster region (e.g. `bru-2`) |
 
 AWS credentials are **not** configured here — they are supplied per task via the connector input fields (`accessKeyId`, `secretAccessKey`, and optionally `sessionToken`).
-Use [Camunda Secrets](https://docs.camunda.io/docs/components/console/manage-clusters/manage-secrets/) to store them securely and reference them in the element template or BPMN input mappings as `secrets.AWS_ACCESS_KEY_ID`, `secrets.AWS_SECRET_ACCESS_KEY`, etc.
+Use [Camunda Secrets](https://docs.camunda.io/docs/components/console/manage-clusters/manage-secrets/) to store them securely and reference them as `secrets.AWS_ACCESS_KEY_ID`, `secrets.AWS_SECRET_ACCESS_KEY`, etc.
 
 ### 2. Build and Run
 
@@ -77,7 +80,12 @@ To model your own process, add a service task and apply the **AWS Braket Connect
 
 ## 📚 Connector Documentation
 
-TODO
+* [Getting Started](docs/getting-started.md): Details of how to get started with the AWS Braket Connector
+* [Connector Configuration and Output Reference](docs/connector-reference.md): All configuration properties and the connector output fields available for use in result expressions and downstream tasks
+* [Using Predefined Quantum Algorithms via a Sidecar](docs/use-predefined-algorithms.md): Architecture and integration guide for using a AWS Braket sidecar to generate quantum circuits from classical problem inputs and post-process measurement results — including support for variational algorithms (VQE, QAOA) with classical optimizer loops.
+* [Example Use Cases & HowTos](docs/usecases.md): End-to-end workflow examples including Grover's search algorithm
+
+
 
 ## 🛠️ Development and Project Setup
 

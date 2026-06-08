@@ -1,0 +1,51 @@
+services:
+
+  # AWS Braket Connector – Spring Boot app connecting to Camunda SaaS
+  # Camunda cluster credentials are read from src/main/resources/application.properties at runtime.
+  # AWS credentials are passed per-task via connector input fields and Camunda Secrets —
+  # they are NOT required as environment variables here.
+  braket-connector:
+    build: ../..
+    volumes:
+      - ../../src/main/resources/application.properties:/app/config/application.properties:ro
+    env_file:
+      - ../../.env
+    environment:
+      SPRING_CONFIG_LOCATION: "file:/app/config/,classpath:/"
+      # Suppress deprecation warning – empty prefix means env var name == secret name.
+      CAMUNDA_CONNECTOR_SECRETPROVIDER_ENVIRONMENT_PREFIX: ""
+    depends_on:
+      quantum-sidecar:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      # Checks the connector's Spring Boot Actuator endpoint, which includes a Zeebe health
+      # indicator that verifies the gRPC connection to Camunda SaaS.
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # Quantum Algorithm Sidecar – Flask service for circuit generation and result processing
+  # For Grover: no additional dependencies, start with just: docker-compose up
+  # For QAOA:   start with --profile qaoa to also bring up the objective evaluator.
+  quantum-sidecar:
+    build: ./sidecar
+    ports:
+      - "5000:5000"
+    environment:
+      OBJECTIVE_EVAL_URL: "http://objective-evaluation-service:5072"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # QAOA only – objective evaluation backend (https://github.com/UST-QuAntiL/objective-evaluation-service)
+  objective-evaluation-service:
+    image: planqk/objective-evaluation-service:latest
+    ports:
+      - "5072:5072"
+    profiles: ["qaoa"]

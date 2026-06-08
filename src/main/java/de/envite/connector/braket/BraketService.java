@@ -46,7 +46,8 @@ public class BraketService {
 
         if (!request.getWaitForResult()) {
             log.debug("[BraketService] waitForResult=false, returning immediately with status QUEUED");
-            return new BraketConnectorResponseDto(taskArn, STATUS_QUEUED, null, buildS3Uri(request, taskArn));
+            return new BraketConnectorResponseDto(taskArn, STATUS_QUEUED, null,
+                    buildS3Uri(request.getS3ResultBucket(), request.getS3KeyPrefix() + "/" + taskArn.substring(taskArn.lastIndexOf('/') + 1)));
         }
 
         String status = taskClient.pollUntilTerminal(request, taskArn);
@@ -57,7 +58,8 @@ public class BraketService {
                 ? s3Client.fetchResult(request, request.getS3ResultBucket(), request.getS3KeyPrefix() + "/" + taskId)
                 : null;
 
-        return new BraketConnectorResponseDto(taskArn, status, result, buildS3Uri(request, taskId));
+        return new BraketConnectorResponseDto(taskArn, status, result,
+                buildS3Uri(request.getS3ResultBucket(), request.getS3KeyPrefix() + "/" + taskId));
     }
 
     /**
@@ -81,7 +83,8 @@ public class BraketService {
                 ? s3Client.fetchResult(request, details.getS3Bucket(), details.getS3Directory())
                 : null;
 
-        return new BraketConnectorResponseDto(request.getTaskArn(), details.getStatus(), result, null);
+        return new BraketConnectorResponseDto(request.getTaskArn(), details.getStatus(), result,
+                buildS3Uri(details.getS3Bucket(), details.getS3Directory()));
     }
 
     /**
@@ -90,7 +93,7 @@ public class BraketService {
      * <p>Braket writes results to {@code s3://<bucket>/<prefix>/<taskId>/results.json}.
      * The task ID is the last path segment of the task ARN.</p>
      */
-    private String buildS3Uri(BraketSubmitTaskRequestDto request, String taskId) {
-        return S3_URI_PREFIX + request.getS3ResultBucket() + "/" + request.getS3KeyPrefix() + "/" + taskId + "/results.json";
+    private String buildS3Uri(String s3Bucket, String s3Directory) {
+        return S3_URI_PREFIX + s3Bucket + "/" + s3Directory + "/results.json";
     }
 }

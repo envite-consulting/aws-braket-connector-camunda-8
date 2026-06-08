@@ -12,7 +12,16 @@
   "icon": {
     "contents": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMiAyMiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIyIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIyLjIiIGZpbGw9IiNGRjk5MDAiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiIHRyYW5zZm9ybT0icm90YXRlKDYwIDExIDExKSIvPgogIDxlbGxpcHNlIGN4PSIxMSIgY3k9IjExIiByeD0iOSIgcnk9IjMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY5OTAwIiBzdHJva2Utd2lkdGg9IjEuMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTIwIDExIDExKSIvPgo8L3N2Zz4K"
   },
-  "appliesTo": ["bpmn:ServiceTask"],
+  "appliesTo": [
+    "bpmn:Task",
+    "bpmn:ServiceTask",
+    "bpmn:UserTask",
+    "bpmn:SendTask",
+    "bpmn:ReceiveTask",
+    "bpmn:ManualTask",
+    "bpmn:BusinessRuleTask",
+    "bpmn:ScriptTask"
+  ],
   "elementType": {
     "value": "bpmn:ServiceTask"
   },
@@ -123,7 +132,7 @@
 
     {
       "label": "Quantum Circuit (OpenQASM 3)",
-      "description": "OpenQASM 3 circuit to execute. Braket does not transpile — use gates supported by the target device. Example: <code>OPENQASM 3.0; qubit[1] q; x q[0];</code>",
+      "description": "OpenQASM 3 circuit to execute. Braket does not transpile — use gates supported by the target device. Example: <code>OPENQASM 3.0; qubit[1] q; bit[1] c; h q[0]; c[0] = measure q[0];</code>",
       "group": "task",
       "type": "Text",
       "feel": "optional",
