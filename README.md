@@ -2,7 +2,7 @@
 
 *TODO 🚀*
 
-[![Build](https://github.com/wederbn/aws-braket-connector-camunda-8/actions/workflows/build.yml/badge.svg)](https://github.com/wederbn/aws-braket-connector-camunda-8/actions/workflows/build.yml)
+[![Build](https://github.com/envite-consulting/aws-braket-connector-camunda-8/actions/workflows/build.yml/badge.svg)](https://github.com/envite-consulting/aws-braket-connector-camunda-8/actions/workflows/build.yml)
 [![Compatible with: Camunda Platform 8](https://img.shields.io/badge/Compatible%20with-Camunda%20Platform%208-26d07c)](https://docs.camunda.io/)
 [![Camunda Marketplace](https://img.shields.io/badge/Find_on-Camunda_Marketplace-brightgreen?style=flat&color=orange)](https://marketplace.camunda.com/en-US/listing?q=aws%20braket&page=1)
 [![sponsored](https://img.shields.io/badge/sponsoredBy-envite-g.svg)](https://envite.de/)
@@ -37,7 +37,6 @@ TODO
 
 Copy `.env.example` to `.env` and fill in your values (never commit `.env` — it is gitignored):
 
-
 Export your Camunda Cluster credentials from **Camunda Console → Clusters → \<your cluster\> → API**:
 
 | Variable | Description |
@@ -67,16 +66,24 @@ Import `element-templates/braket-connector.json` into your Camunda Modeler to ge
 
 ### 4. Model and Deploy a Process
 
-An example polling workflow is provided in `example/getting-started/` (see description above).
-Upload the workflow together with its forms to your Camunda cluster — either via Camunda Web Modeler or the Zeebe API:
+Two example workflows are provided in `example/getting-started/`:
 
-- `example/getting-started/braket-example-workflow-polling.bpmn`
-- `example/getting-started/braket-input-form.form`
-- `example/getting-started/braket-result-form.form`
+- **[Blocking](example/getting-started/braket-example-workflow-blocking.bpmn)** — submits a circuit and blocks the connector thread until the task reaches a terminal state (`waitForResult=true`). This is simple to use, but quantum tasks on real hardware backends may queue for longer than the configured timeout, causing the connector to throw a timeout exception and Camunda to re-execute the circuit. Further, this can lead to incidents if all retries are used.
+- **[Polling](example/getting-started/braket-example-workflow-polling.bpmn)** — submits the task without waiting (`waitForResult=false`), then polls the result every 20 seconds via a BPMN timer loop using the `GET_TASK_RESULT` operation. Recommended for real hardware backends where execution time is unpredictable.
 
+The connector can automatically deploy both example workflows and their forms to your Camunda cluster on startup by enabling the following property in `application.properties`:
+
+```properties
+braket.example.deploy=true
+```
+
+> **Note:** Keep this set to `false` (the default) in production environments.
+
+If you prefer to deploy manually, upload the desired workflow from `example/getting-started/` together with `example/getting-started/braket-input-form.form` and `example/getting-started/braket-result-form.form` to your cluster — either via Camunda Web Modeler or the Zeebe API.
 In case you published the element template to a project, upload the workflow to the **same project** so Web Modeler automatically links the template and displays the connector with its icon.
 
 To model your own process, add a service task and apply the **AWS Braket Connector** element template, then fill in the required properties.
+The full configuration and output reference can be found [here](docs/connector-reference.md).
 
 ## 📚 Connector Documentation
 
@@ -84,8 +91,6 @@ To model your own process, add a service task and apply the **AWS Braket Connect
 * [Connector Configuration and Output Reference](docs/connector-reference.md): All configuration properties and the connector output fields available for use in result expressions and downstream tasks
 * [Using Predefined Quantum Algorithms via a Sidecar](docs/use-predefined-algorithms.md): Architecture and integration guide for using a AWS Braket sidecar to generate quantum circuits from classical problem inputs and post-process measurement results — including support for variational algorithms (VQE, QAOA) with classical optimizer loops.
 * [Example Use Cases & HowTos](docs/usecases.md): End-to-end workflow examples including Grover's search algorithm
-
-
 
 ## 🛠️ Development and Project Setup
 

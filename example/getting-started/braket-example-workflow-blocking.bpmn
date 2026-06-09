@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+             xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             targetNamespace="http://bpmn.io/schema/bpmn"
+             modeler:executionPlatform="Camunda Cloud"
+             modeler:executionPlatformVersion="8.8.0">
+
+  <process id="braket-example-workflow-blocking" name="AWS Braket Example Workflow (Blocking)" isExecutable="true">
+
+    <extensionElements>
+      <zeebe:properties>
+        <zeebe:property name="description" value="Executes a quantum circuit synchronously using the blocking connector mode (waitForResult=true). Note: quantum jobs on real hardware backends may queue for longer than the configured timeout, causing the connector to throw a timeout exception and Camunda to re-execute the circuit from scratch. For long-running circuits, prefer the polling workflow instead." />
+      </zeebe:properties>
+    </extensionElements>
+
+    <startEvent id="start" name="Quantum circuit&#10;submitted">
+      <extensionElements>
+        <zeebe:formDefinition formId="braket-input-form" />
+      </extensionElements>
+      <outgoing>to-quantum</outgoing>
+    </startEvent>
+
+    <sequenceFlow id="to-quantum" sourceRef="start" targetRef="quantum-task" />
+
+    <serviceTask id="quantum-task" name="Execute&#10;quantum circuit"
+                 zeebe:modelerTemplate="de.envite.aws-braket-connector"
+                 zeebe:modelerTemplateVersion="1"
+                 zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMiAyMiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIyIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIyLjIiIGZpbGw9IiNGRjk5MDAiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8ZWxsaXBzZSBjeD0iMTEiIGN5PSIxMSIgcng9IjkiIHJ5PSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGOTkwMCIgc3Ryb2tlLXdpZHRoPSIxLjIiIHRyYW5zZm9ybT0icm90YXRlKDYwIDExIDExKSIvPgogIDxlbGxpcHNlIGN4PSIxMSIgY3k9IjExIiByeD0iOSIgcnk9IjMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY5OTAwIiBzdHJva2Utd2lkdGg9IjEuMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTIwIDExIDExKSIvPgo8L3N2Zz4K">
+      <extensionElements>
+        <zeebe:taskDefinition type="de.envite:aws-braket-connector:1" retries="3" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="resultExpression" value="= {braketResult: {taskArn: response.taskArn, status: response.status, result: response.result, resultS3Uri: response.resultS3Uri}}" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="= &quot;SUBMIT_TASK&quot;" target="operationMode" />
+          <zeebe:input source="= true" target="waitForResult" />
+          <zeebe:input source="= accessKeyId" target="accessKeyId" />
+          <zeebe:input source="= secretAccessKey" target="secretAccessKey" />
+          <zeebe:input source="= region" target="region" />
+          <zeebe:input source="= deviceArn" target="deviceArn" />
+          <zeebe:input source="= &quot;OPEN_QASM&quot;" target="circuitInputMode" />
+          <zeebe:input source="= circuit" target="circuit" />
+          <zeebe:input source="= shots" target="shots" />
+          <zeebe:input source="= s3ResultBucket" target="s3ResultBucket" />
+          <zeebe:input source="= s3KeyPrefix" target="s3KeyPrefix" />
+        </zeebe:ioMapping>
+      </extensionElements>
+      <incoming>to-quantum</incoming>
+      <outgoing>to-review</outgoing>
+    </serviceTask>
+
+    <sequenceFlow id="to-review" sourceRef="quantum-task" targetRef="review-task" />
+
+    <userTask id="review-task" name="Review&#10;quantum result">
+      <extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="braket-result-form" />
+      </extensionElements>
+      <incoming>to-review</incoming>
+      <outgoing>to-end</outgoing>
+    </userTask>
+
+    <sequenceFlow id="to-end" sourceRef="review-task" targetRef="end" />
+
+    <endEvent id="end" name="Quantum task&#10;completed">
+      <incoming>to-end</incoming>
+    </endEvent>
+
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="braket-example-workflow-blocking">
+
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="162" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="138" y="142" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="quantum-task_di" bpmnElement="quantum-task">
+        <dc:Bounds x="260" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="review-task_di" bpmnElement="review-task">
+        <dc:Bounds x="430" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="602" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="578" y="142" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="to-quantum_di" bpmnElement="to-quantum">
+        <di:waypoint x="198" y="117" />
+        <di:waypoint x="260" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-review_di" bpmnElement="to-review">
+        <di:waypoint x="360" y="117" />
+        <di:waypoint x="430" y="117" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="to-end_di" bpmnElement="to-end">
+        <di:waypoint x="530" y="117" />
+        <di:waypoint x="602" y="117" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</definitions>
