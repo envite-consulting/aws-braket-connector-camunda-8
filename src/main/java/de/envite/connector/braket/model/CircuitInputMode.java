@@ -12,6 +12,6 @@ package de.envite.connector.braket.model;
  * </ul>
  */
 public enum CircuitInputMode {
-    OPEN_QASM,
-    DIRECT_PARAMS
+  OPEN_QASM,
+  DIRECT_PARAMS
 }

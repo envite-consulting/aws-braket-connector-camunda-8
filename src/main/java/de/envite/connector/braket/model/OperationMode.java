@@ -9,6 +9,6 @@ package de.envite.connector.braket.model;
  * </ul>
  */
 public enum OperationMode {
-    SUBMIT_TASK,
-    GET_TASK_RESULT
+  SUBMIT_TASK,
+  GET_TASK_RESULT
 }

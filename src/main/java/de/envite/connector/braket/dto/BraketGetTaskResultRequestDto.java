@@ -2,9 +2,7 @@ package de.envite.connector.braket.dto;
 
 import de.envite.connector.braket.model.OperationMode;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
@@ -24,7 +22,9 @@ import lombok.extern.jackson.Jacksonized;
 @ToString(callSuper = true)
 public class BraketGetTaskResultRequestDto extends BraketBaseRequestDto {
 
-    /** ARN of the previously submitted AWS Braket task. */
-    @NotEmpty
-    private final String taskArn;
+  /**
+   * ARN of the previously submitted AWS Braket task.
+   */
+  @NotEmpty
+  private final String taskArn;
 }

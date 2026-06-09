@@ -226,7 +226,7 @@ Both checks also run as a dedicated `lint` job in CI on every push and pull requ
 
 Once active, violations appear as inline editor warnings and in the *Checkstyle* tool window.
 
-The IntelliJ code formatter (`Ctrl+Alt+L`) can be aligned with the Code style by importing the scheme via *Settings → Editor → Code Style → Java → ⚙ → Import Scheme → IntelliJ IDEA code style XML* and selecting [checkstyle_configuration.xml](checkstyle_configuration.xml), so auto-formatting produces compliant output.
+The IntelliJ code formatter (`Ctrl+Alt+L`) can be aligned with the Code style by importing the scheme via *Settings → Editor → Code Style → Java → ⚙ → Import Scheme → IntelliJ IDEA code style XML* and selecting [intellij_idea_style_config.xml](intellij_idea_style_config.xml), so auto-formatting produces compliant output.
 
 ## 📨Contact
 
