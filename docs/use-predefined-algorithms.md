@@ -46,7 +46,6 @@ The BPMN workflow only orchestrates data flow between the three steps.
 
 The sidecar is a separate Docker container deployed alongside the connector, reachable at `http://localhost:<port>` or by Docker Compose service name.
 
-**Key difference from IBM Q:** AWS Braket credentials are **not** needed in the sidecar. They are passed per-task via the connector's input fields and resolved from Camunda Secrets. The sidecar generates circuits locally using the Amazon Braket SDK and AWS Braket handles transpilation server-side.
 
 ---
 
@@ -121,7 +120,7 @@ AWS Braket returns measurements as a list of shot results, where each entry is a
 }
 ```
 
-This format is simpler than IBM Q's hex-encoded samples — each inner list directly encodes the qubit measurement outcome for one shot.
+Each inner list directly encodes the qubit measurement outcome for one shot.
 
 **Response (Grover):**
 ```json

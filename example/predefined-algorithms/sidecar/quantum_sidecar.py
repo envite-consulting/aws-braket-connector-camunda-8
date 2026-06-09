@@ -23,7 +23,6 @@ Endpoints:
     POST /optimize           Runs one stateless SPSA step. The workflow passes all optimizer
                              state back on every call — no server-side session is maintained.
 
-Key difference from the IBM Q sidecar:
     AWS Braket returns measurements as a list of shot results ([[0,1],[1,0],...]),
     not as hex-encoded bitstring samples. The _extract_counts helper handles this format.
     AWS credentials are NOT needed in the sidecar — they are passed per-task through the
@@ -511,7 +510,7 @@ def _extract_counts(results: object) -> dict[str, int]:
           ...
         }
 
-    This differs from the IBM Q sidecar which decodes hex-encoded bitstring samples.
+
     """
     counts: dict[str, int] = {}
     try:
