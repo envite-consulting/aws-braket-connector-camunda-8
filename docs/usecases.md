@@ -23,6 +23,8 @@ Given a target bitstring (e.g. `"11"`), find it in the search space of all 2-qub
 
 ### Workflow structure
 
+![Grover's Search workflow](images/grover-workflow.png)
+
 ```
 Start Form → Generate Circuit → Submit Task → [Poll Loop] → Process Results → Review → End
 ```
@@ -129,6 +131,8 @@ The workflow loops — running a quantum circuit and a classical SPSA optimizer 
 Given an undirected weighted graph (adjacency matrix), find the node partition that maximizes the total weight of edges between the two partitions.
 
 ### Workflow structure
+
+![QAOA MaxCut workflow](images/qaoa-max-cut-workflow.png)
 
 ```
 Start Form → Generate Circuit → Submit Task → [Poll Loop] → Evaluate Results → SPSA Optimize
