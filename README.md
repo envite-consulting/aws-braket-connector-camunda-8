@@ -232,7 +232,7 @@ The IntelliJ code formatter (`Ctrl+Alt+L`) can be aligned with the Code style by
 
 ## 📨Contact
 
-If you have any questions or ideas feel free to start a [discussion](https://github.com/envite-consulting/ibmq-connector-camunda-8/discussions) or contact us via [mail](mailto:quantum-computing@envite.de).
+If you have any questions or ideas feel free to start a [discussion](https://github.com/envite-consulting/aws-braket-connector-camunda-8/discussions) or contact us via [mail](mailto:quantum-computing@envite.de).
 
 This open source project is being developed by [envite consulting GmbH](https://envite.de).
 
