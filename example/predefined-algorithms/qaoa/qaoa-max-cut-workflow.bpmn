@@ -19,7 +19,7 @@
     convergence. The connector and the sidecar are independent components.
 
     The sidecar receives measurementProbabilities from Braket's S3 result (instead of
-    IBM-style bit counts) and computes the MaxCut objective value from them.
+    bit counts) and computes the MaxCut objective value from them.
 
     Expected process variables at start (via qaoa-input-form):
       problem        – object: { "adj_matrix": [[...]], "p": 1, "shots": 1000 }
@@ -189,7 +189,7 @@
     <!-- ── 6. Evaluate quantum results via sidecar ───────────────────────
          Calls POST /process-results on the sidecar.
          Passes braketResult.result (measurementProbabilities map) — note this differs from
-         IBM where bit counts are passed. The sidecar computes the QAOA objective value.
+         other providers where bit counts are passed. The sidecar computes the QAOA objective value.
     -->
 
     <serviceTask id="evaluate-results" name="Evaluate&#10;quantum results">

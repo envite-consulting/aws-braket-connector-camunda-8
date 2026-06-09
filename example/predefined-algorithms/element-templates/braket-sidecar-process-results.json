@@ -52,7 +52,7 @@
 
     {
       "label": "Request Body (FEEL)",
-      "description": "FEEL object sent as the sidecar request body. Must include <code>algorithm</code>, the original <code>problem</code>, and <code>results</code> — the raw Braket measurement data from <code>braketResult.result</code> as set by the AWS Braket Connector's GET_TASK_RESULT result expression. Note: Braket returns <code>measurementProbabilities</code>, not bit counts as in IBM Quantum.",
+      "description": "FEEL object sent as the sidecar request body. Must include <code>algorithm</code>, the original <code>problem</code>, and <code>results</code> — the raw Braket measurement data from <code>braketResult.result</code> as set by the AWS Braket Connector's GET_TASK_RESULT result expression. Note: Braket returns <code>measurementProbabilities</code>, not bit counts as used by other providers.",
       "group": "algorithm",
       "type": "Text",
       "feel": "required",
