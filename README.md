@@ -15,14 +15,14 @@ It accepts quantum circuits as OpenQASM strings or raw JSON parameters, and offe
 For higher-level algorithms — such as Grover's search algorithm or Quantum Approximate Optimization Algorithm (QAOA) — the [AWS Braket Algorithm Accelerator pattern](docs/use-predefined-algorithms.md) extends the connector with a lightweight Python sidecar
 This sidecar generates circuits from classical problem inputs and interprets raw measurement results, enabling the execution of variational quantum algorithms with classical optimization loops within a BPMN workflow.
 
-In addition to the exemplary workflows orchestrating complex quantum algorithms, two simpel example workflows are provided in the `example/getting-started/` directory:
+In addition to the exemplary workflows orchestrating complex quantum algorithms, two simple example workflows are provided in the `example/getting-started/` directory:
 
 - **[Blocking](example/getting-started/braket-example-workflow-blocking.bpmn)** — submits a circuit and blocks the connector thread until the job reaches a terminal state (`waitForResult=true`). This is simple to use, but quantum jobs on real hardware backends may queue for longer than the configured timeout, causing the connector to throw a timeout exception and Camunda to re-execute the circuit. Further, this can lead to an incidents if all retries are used.
 - **[Polling](example/getting-started/braket-example-workflow-polling.bpmn)** — submits the job without waiting (`waitForResult=false`), then polls the result every 30 seconds via a BPMN timer loop using the `GET_JOB_RESULT` operation. Recommended for real hardware backends where execution time is unpredictable.
 
 Both workflows include a start event with an input form for all relevant connector parameters, the AWS Braket Connector service task, a user task for reviewing the result, and an end event.
 The polling example workflow can be seen below.
-In the first step of the process, the quantum circuit is submitted using the AWS Braket Connector, afterward a loop is entered, checking for the current state of the quantum job every 30s using the connector until it reaches a terminated state (completed, canceled, error).
+In the first step of the workflow, the quantum circuit is submitted using the AWS Braket Connector, afterward a loop is entered, checking for the current state of the quantum job every 30s using the connector until it reaches a terminated state (completed, canceled, error).
 To run the example, follow the steps under [How to Run](#-how-to-run), and then import the file into Camunda Modeler.
 
 ![Example workflow in Camunda Modeler](docs/images/example-workflow-polling.png)
@@ -125,7 +125,7 @@ Import `element-templates/braket-connector.json` into your Camunda Modeler to ge
 - **Camunda Web Modeler**: go to your project → *Create new* → *Upload files* → select `element-templates/braket-connector.json`. Afterward, open the element template and publish it to the project or organization.
 - **Camunda Desktop Modeler**: copy the file into the `resources/element-templates` directory of the modeler.
 
-### 4. Model and Deploy a Process
+### 4. Model and Deploy a Workflow
 
 Example workflows are provided in `example/getting-started/` (see [above](#aws-braket-connector-for-camunda-8) for a description of each).
 The connector can automatically deploy both example workflows and their forms to your Camunda cluster on startup by enabling the following property in `application.properties`:
@@ -139,7 +139,7 @@ braket.example.deploy=true
 If you prefer to deploy manually, upload the desired workflow from `example/getting-started/` together with `example/getting-started/braket-input-form.form` and `example/getting-started/braket-result-form.form` to your cluster — either via Camunda Web Modeler or the Zeebe API.
 In case you published the element template to a project, upload the workflow to the **same project** so Web Modeler automatically links the template and displays the connector with its icon.
 
-To model your own process, add a service task and apply the **AWS Braket Connector** element template, then fill in the required properties.
+To model your own workflow, add a service task and apply the **AWS Braket Connector** element template, then fill in the required properties.
 The full configuration and output reference can be found [here](docs/connector-reference.md).
 
 ## 📚 Connector Documentation
@@ -173,7 +173,6 @@ example/
 └── predefined-algorithms/            # Grover and QAOA end-to-end examples with sidecar
 docs/                                 # Extended documentation
 ```
-
 
 ### Build
 
@@ -228,7 +227,6 @@ Both checks also run as a dedicated `lint` job in CI on every push and pull requ
 Once active, violations appear as inline editor warnings and in the *Checkstyle* tool window.
 
 The IntelliJ code formatter (`Ctrl+Alt+L`) can be aligned with the Code style by importing the scheme via *Settings → Editor → Code Style → Java → ⚙ → Import Scheme → IntelliJ IDEA code style XML* and selecting [checkstyle_configuration.xml](checkstyle_configuration.xml), so auto-formatting produces compliant output.
-
 
 ## 📨Contact
 
