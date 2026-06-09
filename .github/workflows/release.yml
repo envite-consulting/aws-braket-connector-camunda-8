@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build
+        run: mvn --batch-mode -DskipTests package
+
+      - name: Collect release artifacts
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          cp target/aws-braket-connector-camunda-8-${VERSION}.jar aws-braket-connector-camunda-8-${VERSION}.jar
+          cp element-templates/braket-connector.json braket-connector.json
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            aws-braket-connector-camunda-8-*.jar
+            braket-connector.json
+          generate_release_notes: true
