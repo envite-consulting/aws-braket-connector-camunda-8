@@ -24,40 +24,40 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 @Component
 public class BraketS3Client {
 
-    private final BraketAuthProvider authProvider;
-    private final ObjectMapper objectMapper;
+  private final BraketAuthProvider authProvider;
+  private final ObjectMapper objectMapper;
 
-    /**
-     * Downloads and parses the result JSON for the given task.
-     *
-     * @param request     connector request carrying AWS credentials and region
-     * @param s3Bucket    S3 bucket name
-     * @param s3Directory full S3 directory path, e.g. {@code my-prefix/<taskId>}
-     * @return parsed result payload as a {@code JsonNode}
-     * @throws RuntimeException if the S3 object cannot be retrieved or parsed
-     */
-    public Object fetchResult(BraketBaseRequestDto request, String s3Bucket, String s3Directory) {
-        String key = s3Directory + "/results.json";
-        log.debug("[BraketS3Client] Fetching result: bucket={} key={}", s3Bucket, key);
+  /**
+   * Downloads and parses the result JSON for the given task.
+   *
+   * @param request     connector request carrying AWS credentials and region
+   * @param s3Bucket    S3 bucket name
+   * @param s3Directory full S3 directory path, e.g. {@code my-prefix/<taskId>}
+   * @return parsed result payload as a {@code JsonNode}
+   * @throws RuntimeException if the S3 object cannot be retrieved or parsed
+   */
+  public Object fetchResult(BraketBaseRequestDto request, String s3Bucket, String s3Directory) {
+    String key = s3Directory + "/results.json";
+    log.debug("[BraketS3Client] Fetching result: bucket={} key={}", s3Bucket, key);
 
-        try (S3Client client = buildClient(request)) {
-            ResponseBytes<GetObjectResponse> response = client.getObjectAsBytes(
-                    GetObjectRequest.builder()
-                            .bucket(s3Bucket)
-                            .key(key)
-                            .build()
-            );
-            return objectMapper.readTree(response.asUtf8String());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch task result from S3 (bucket=%s key=%s): %s"
-                    .formatted(s3Bucket, key, e.getMessage()), e);
-        }
+    try (S3Client client = buildClient(request)) {
+      ResponseBytes<GetObjectResponse> response = client.getObjectAsBytes(
+          GetObjectRequest.builder()
+              .bucket(s3Bucket)
+              .key(key)
+              .build()
+      );
+      return objectMapper.readTree(response.asUtf8String());
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to fetch task result from S3 (bucket=%s key=%s): %s"
+          .formatted(s3Bucket, key, e.getMessage()), e);
     }
+  }
 
-    private S3Client buildClient(BraketBaseRequestDto request) {
-        return S3Client.builder()
-                .credentialsProvider(authProvider.getCredentialsProvider(request))
-                .region(Region.of(request.getRegion()))
-                .build();
-    }
+  private S3Client buildClient(BraketBaseRequestDto request) {
+    return S3Client.builder()
+        .credentialsProvider(authProvider.getCredentialsProvider(request))
+        .region(Region.of(request.getRegion()))
+        .build();
+  }
 }

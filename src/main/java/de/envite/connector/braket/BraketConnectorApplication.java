@@ -9,13 +9,13 @@ import org.springframework.context.annotation.Primary;
 @SpringBootApplication
 public class BraketConnectorApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(BraketConnectorApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(BraketConnectorApplication.class, args);
+  }
 
-    @Bean
-    @Primary
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
-    }
+  @Bean
+  @Primary
+  public ObjectMapper objectMapper() {
+    return new ObjectMapper();
+  }
 }

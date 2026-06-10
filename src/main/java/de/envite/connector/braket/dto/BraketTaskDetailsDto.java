@@ -11,16 +11,20 @@ import lombok.Getter;
 @AllArgsConstructor
 public class BraketTaskDetailsDto {
 
-    /** Current task status string, e.g. {@code QUEUED}, {@code COMPLETED}, {@code FAILED}. */
-    private final String status;
+  /**
+   * Current task status string, e.g. {@code QUEUED}, {@code COMPLETED}, {@code FAILED}.
+   */
+  private final String status;
 
-    /** S3 bucket name where Braket stores the result. */
-    private final String s3Bucket;
+  /**
+   * S3 bucket name where Braket stores the result.
+   */
+  private final String s3Bucket;
 
-    /**
-     * Full S3 directory path for the result, e.g. {@code my-prefix/<taskId>}.
-     * Corresponds to {@code outputS3Directory} in the AWS Braket API response.
-     * The result object key is this value with {@code /results.json} appended.
-     */
-    private final String s3Directory;
+  /**
+   * Full S3 directory path for the result, e.g. {@code my-prefix/<taskId>}.
+   * Corresponds to {@code outputS3Directory} in the AWS Braket API response.
+   * The result object key is this value with {@code /results.json} appended.
+   */
+  private final String s3Directory;
 }
